@@ -54,6 +54,12 @@ public abstract class AbstractYarnAMClient<T> extends AbstractIdleService implem
   private final List<T> requests;
   // List of requests pending to remove through allocate call
   private final List<T> removes;
+  //List of pending blacklist additions
+  private final List<String> blacklistAdditions;
+  //List of pending blacklist removals
+  private final List<String> blacklistRemovals;
+  //Keep track of blacklisted resources
+  private final List<String> blacklistedResources;
 
   protected final ContainerId containerId;
   protected InetSocketAddress trackerAddr;
@@ -72,6 +78,9 @@ public abstract class AbstractYarnAMClient<T> extends AbstractIdleService implem
     this.containerRequests = ArrayListMultimap.create();
     this.requests = Lists.newLinkedList();
     this.removes = Lists.newLinkedList();
+    this.blacklistAdditions = Lists.newArrayList();
+    this.blacklistRemovals = Lists.newArrayList();
+    this.blacklistedResources = Lists.newArrayList();
   }
 
 
@@ -104,6 +113,15 @@ public abstract class AbstractYarnAMClient<T> extends AbstractIdleService implem
         removeContainerRequest(request);
       }
       removes.clear();
+    }
+
+    if (!blacklistAdditions.isEmpty() || !blacklistRemovals.isEmpty()) {
+      updateBlacklist(blacklistAdditions, blacklistRemovals);
+      //TODO: Remove duplicates : not needed necessarily - AMRMClient dedups already.
+      blacklistedResources.removeAll(blacklistRemovals);
+      blacklistedResources.addAll(blacklistAdditions);
+      blacklistAdditions.clear();
+      blacklistRemovals.clear();
     }
 
     AllocateResult allocateResponse = doAllocate(progress);
@@ -160,11 +178,33 @@ public abstract class AbstractYarnAMClient<T> extends AbstractIdleService implem
   }
 
   @Override
+  public final void addToBlacklist(String node) {
+    if (!blacklistAdditions.contains(node)) {
+      blacklistAdditions.add(node);
+    }
+  }
+
+  @Override
+  public final void removeFromBlacklist(String node) {
+    if (!blacklistRemovals.contains(node)) {
+      blacklistRemovals.add(node);
+    }
+  }
+
+  @Override
+  public final void clearBlacklist() {
+    blacklistRemovals.addAll(blacklistedResources);
+    blacklistAdditions.clear();
+  }
+
+  @Override
   public final synchronized void completeContainerRequest(String id) {
     for (T request : containerRequests.removeAll(id)) {
       removes.add(request);
     }
   }
+
+
 
   /**
    * Adjusts the given resource capability to fit in the cluster limit.
@@ -195,6 +235,11 @@ public abstract class AbstractYarnAMClient<T> extends AbstractIdleService implem
    * Removes the given request to prepare for the next allocate call.
    */
   protected abstract void removeContainerRequest(T request);
+
+  /**
+   * Send blacklist updates in the next allocate call.
+   */
+  protected abstract void updateBlacklist(List<String> blacklistAdditions, List<String> blacklistRemovals);
 
   /**
    * Performs actual allocate call to RM.

@@ -60,6 +60,45 @@ public interface TwillSpecification {
   }
 
   /**
+   * Defines a group of runnables with a specific
+   * {@link org.apache.twill.api.TwillSpecification.PlacementPolicyGroup.Type Placement Policy}.
+   */
+  interface PlacementPolicyGroup {
+
+    enum Type {
+      DEFAULT,
+      DISTRIBUTED,
+      UNCARED
+    }
+
+    Set<String> getNames();
+
+    Type getType();
+
+    PlacementHints getPlacementHints();
+  }
+
+  /**
+   * Defines all the {@link org.apache.twill.api.TwillSpecification.PlacementPolicyGroup Placement Policies}
+   * for a Twill Application.
+   */
+
+  interface PlacementPolicy {
+
+    void add(PlacementPolicyGroup placementPolicyGroup);
+
+    List<PlacementPolicyGroup> getPlacementPolicyGroups();
+
+    List<PlacementPolicyGroup> getPlacementPolicyGroups(Order order);
+
+    List<PlacementPolicyGroup> getPlacementPolicyGroups(Set<String> runnableNames);
+
+    PlacementPolicyGroup getPlacementPolicyGroup(String runnableName);
+
+    int size();
+  }
+
+  /**
    * @return Name of the application.
    */
   String getName();
@@ -73,6 +112,8 @@ public interface TwillSpecification {
    * @return Returns a list of runnable names that should be executed in the given order.
    */
   List<Order> getOrders();
+
+  PlacementPolicy getPlacementPolicy();
 
   /**
    * @return The {@link EventHandlerSpecification} for the {@link EventHandler} to be used for this application,
@@ -89,6 +130,7 @@ public interface TwillSpecification {
     private String name;
     private Map<String, RuntimeSpecification> runnables = Maps.newHashMap();
     private List<Order> orders = Lists.newArrayList();
+    private PlacementPolicy placementPolicy = new DefaultTwillSpecification.DefaultPlacementPolicy();
     private EventHandlerSpecification eventHandler;
 
     public static NameSetter with() {
@@ -128,6 +170,8 @@ public interface TwillSpecification {
       FirstOrder withOrder();
 
       AfterOrder anyOrder();
+
+      PlacementPolicySetter withPlacementPolicy();
     }
 
     public final class RunnableSetter implements MoreRunnable, AfterRunnable {
@@ -163,12 +207,21 @@ public interface TwillSpecification {
 
       @Override
       public FirstOrder withOrder() {
+        PlacementPolicySetter placementPolicySetter = new PlacementPolicySetter();
+        placementPolicySetter.placementPolicyEpilogue();
         return new OrderSetter();
       }
 
       @Override
       public AfterOrder anyOrder() {
+        PlacementPolicySetter placementPolicySetter = new PlacementPolicySetter();
+        placementPolicySetter.placementPolicyEpilogue();
         return new OrderSetter();
+      }
+
+      @Override
+      public PlacementPolicySetter withPlacementPolicy() {
+        return new PlacementPolicySetter();
       }
     }
 
@@ -252,6 +305,85 @@ public interface TwillSpecification {
       }
     }
 
+    public interface MorePlacementPolicies {
+      PlacementPolicySetter add(PlacementHints placementHints, String name, String... names);
+
+      PlacementPolicySetter add(PlacementPolicyGroup.Type type, String name, String... names);
+
+      PlacementPolicySetter add(PlacementPolicyGroup.Type type, PlacementHints placementHints, String name,
+                                String... names);
+    }
+
+    public interface AfterPlacementPolicy {
+      FirstOrder withOrder();
+
+      AfterOrder anyOrder();
+    }
+
+    public final class PlacementPolicySetter implements MorePlacementPolicies, AfterPlacementPolicy {
+
+      @Override
+      public PlacementPolicySetter add(PlacementHints placementHints, String name, String...names) {
+        addPlacementPolicy(PlacementPolicyGroup.Type.DEFAULT, placementHints, name, names);
+        return this;
+      }
+
+      @Override
+      public PlacementPolicySetter add(PlacementPolicyGroup.Type type, String name, String...names) {
+        //TODO: Add a default implementation for placement hints, which specify no hints :)
+        addPlacementPolicy(type, new PlacementHints(), name, names);
+        return this;
+      }
+
+      @Override
+      public PlacementPolicySetter add(PlacementPolicyGroup.Type type, PlacementHints placementHints, String name,
+                                       String...names) {
+        addPlacementPolicy(type, placementHints, name, names);
+        return this;
+      }
+
+      private void addPlacementPolicy(PlacementPolicyGroup.Type type, PlacementHints placementHints, String name,
+                                      String...names) {
+
+        Preconditions.checkArgument(name != null, "Name cannot be null.");
+        Preconditions.checkArgument(runnables.containsKey(name), "Runnable not exists.");
+
+        Set<String> runnableNames = Sets.newHashSet(name);
+        for (String runnableName : names) {
+          Preconditions.checkArgument(runnableName != null, "Name cannot be null.");
+          Preconditions.checkArgument(runnables.containsKey(runnableName), "Runnable not exists.");
+          runnableNames.add(runnableName);
+        }
+        placementPolicy.add(new DefaultTwillSpecification.
+                                      DefaultPlacementPolicyGroup(runnableNames, type, placementHints));
+      }
+
+      private void placementPolicyEpilogue() {
+        // Assign UNCARED for runnables that hasn't been assigned a placement policy.
+        Set<String> runnableNames = Sets.newHashSet(runnables.keySet());
+        for (PlacementPolicyGroup placementPolicyGroup : placementPolicy.getPlacementPolicyGroups(runnableNames)) {
+          runnableNames.removeAll(placementPolicyGroup.getNames());
+        }
+        //TODO: Default implementation for PlacementHints
+        placementPolicy.add(new DefaultTwillSpecification.
+                              DefaultPlacementPolicyGroup(runnableNames,
+                                                          PlacementPolicyGroup.Type.UNCARED, new PlacementHints()));
+        return;
+      }
+
+      @Override
+      public FirstOrder withOrder() {
+        placementPolicyEpilogue();
+        return new OrderSetter();
+      }
+
+      @Override
+      public AfterOrder anyOrder() {
+        placementPolicyEpilogue();
+        return new OrderSetter();
+      }
+    }
+
     public interface FirstOrder {
       NextOrder begin(String name, String...names);
     }
@@ -304,7 +436,7 @@ public interface TwillSpecification {
         // For all unordered runnables, add it to the end of orders list
         orders.add(new DefaultTwillSpecification.DefaultOrder(runnableNames, Order.Type.STARTED));
 
-        return new DefaultTwillSpecification(name, runnables, orders, eventHandler);
+        return new DefaultTwillSpecification(name, runnables, orders, placementPolicy, eventHandler);
       }
 
       private void addOrder(final Order.Type type, String name, String...names) {

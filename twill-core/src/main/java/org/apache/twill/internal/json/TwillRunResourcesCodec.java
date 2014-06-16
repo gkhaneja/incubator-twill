@@ -60,6 +60,7 @@ public final class TwillRunResourcesCodec implements JsonSerializer<TwillRunReso
                                         jsonObj.get("virtualCores").getAsInt(),
                                         jsonObj.get("memoryMB").getAsInt(),
                                         jsonObj.get("host").getAsString(),
+                                        jsonObj.get("node").getAsString(),
                                         jsonObj.has("debugPort") ? jsonObj.get("debugPort").getAsInt() : null);
   }
 }

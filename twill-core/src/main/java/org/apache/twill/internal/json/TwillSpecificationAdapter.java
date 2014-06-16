@@ -36,6 +36,8 @@ import org.apache.twill.api.TwillRunnableSpecification;
 import org.apache.twill.api.TwillSpecification;
 import org.apache.twill.internal.json.TwillSpecificationCodec.EventHandlerSpecificationCoder;
 import org.apache.twill.internal.json.TwillSpecificationCodec.TwillSpecificationOrderCoder;
+import org.apache.twill.internal.json.TwillSpecificationCodec.TwillSpecificationPlacementPolicyCoder;
+import org.apache.twill.internal.json.TwillSpecificationCodec.TwillSpecificationPlacementPolicyGroupCoder;
 
 import java.io.File;
 import java.io.IOException;
@@ -61,13 +63,17 @@ public final class TwillSpecificationAdapter {
               .serializeNulls()
               .registerTypeAdapter(TwillSpecification.class, new TwillSpecificationCodec())
               .registerTypeAdapter(TwillSpecification.Order.class, new TwillSpecificationOrderCoder())
-              .registerTypeAdapter(EventHandlerSpecification.class, new EventHandlerSpecificationCoder())
-              .registerTypeAdapter(RuntimeSpecification.class, new RuntimeSpecificationCodec())
-              .registerTypeAdapter(TwillRunnableSpecification.class, new TwillRunnableSpecificationCodec())
-              .registerTypeAdapter(ResourceSpecification.class, new ResourceSpecificationCodec())
-              .registerTypeAdapter(LocalFile.class, new LocalFileCodec())
-              .registerTypeAdapterFactory(new TwillSpecificationTypeAdapterFactory())
-              .create();
+              .registerTypeAdapter(TwillSpecification.PlacementPolicy.class,
+                                   new TwillSpecificationPlacementPolicyCoder())
+              .registerTypeAdapter(TwillSpecification.PlacementPolicyGroup.class,
+                                   new TwillSpecificationPlacementPolicyGroupCoder())
+                .registerTypeAdapter(EventHandlerSpecification.class, new EventHandlerSpecificationCoder())
+                .registerTypeAdapter(RuntimeSpecification.class, new RuntimeSpecificationCodec())
+                .registerTypeAdapter(TwillRunnableSpecification.class, new TwillRunnableSpecificationCodec())
+                .registerTypeAdapter(ResourceSpecification.class, new ResourceSpecificationCodec())
+                .registerTypeAdapter(LocalFile.class, new LocalFileCodec())
+                .registerTypeAdapterFactory(new TwillSpecificationTypeAdapterFactory())
+                .create();
   }
 
   public String toJson(TwillSpecification spec) {

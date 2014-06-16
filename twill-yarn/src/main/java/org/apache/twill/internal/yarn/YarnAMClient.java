@@ -104,6 +104,12 @@ public interface YarnAMClient extends Service {
 
   ContainerRequestBuilder addContainerRequest(Resource capability, int count);
 
+  void addToBlacklist(String node);
+
+  void removeFromBlacklist(String node);
+
+  void clearBlacklist();
+
   /**
    * Notify a container request is fulfilled.
    *

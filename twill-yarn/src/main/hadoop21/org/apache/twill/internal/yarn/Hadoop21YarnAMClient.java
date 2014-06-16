@@ -111,6 +111,12 @@ public final class Hadoop21YarnAMClient extends AbstractYarnAMClient<AMRMClient.
   }
 
   @Override
+  protected void updateBlacklist(List<String> blacklistAdditions, List<String> blacklistRemovals) {
+    LOG.info("Blacklist Additions: {} , Blacklist Removals: {}", blacklistAdditions, blacklistRemovals);
+    amrmClient.updateBlacklist(blacklistAdditions, blacklistRemovals);
+  }
+
+  @Override
   protected AllocateResult doAllocate(float progress) throws Exception {
     AllocateResponse allocateResponse = amrmClient.allocate(progress);
     List<RunnableProcessLauncher> launchers
