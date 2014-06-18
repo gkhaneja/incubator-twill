@@ -20,7 +20,6 @@ package org.apache.twill.yarn;
 
 import com.google.common.collect.ImmutableMap;
 import org.apache.twill.api.AbstractTwillRunnable;
-import org.apache.twill.api.ResourceReport;
 import org.apache.twill.api.ResourceSpecification;
 import org.apache.twill.api.TwillApplication;
 import org.apache.twill.api.TwillController;
