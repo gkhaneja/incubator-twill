@@ -46,7 +46,7 @@ import java.util.concurrent.TimeUnit;
  * Tests for placement Policies.
  *
  */
-public class PlacementPolicyTestRun extends DistributedBaseYarnTest {
+public class PlacementPolicyTestRun extends BaseYarnTest {
   private static final Logger LOG = LoggerFactory.getLogger(ResourceReportTestRun.class);
 
   @Test
