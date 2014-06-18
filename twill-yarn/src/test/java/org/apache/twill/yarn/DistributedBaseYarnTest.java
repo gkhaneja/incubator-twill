@@ -15,11 +15,24 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.twill.api;
+package org.apache.twill.yarn;
+
+import org.junit.BeforeClass;
+import org.junit.ClassRule;
+import org.junit.rules.TemporaryFolder;
+
+import java.io.IOException;
 
 /**
- * Class for users to specify placement hints such as hosts and racks.
- * TODO: Currently a placeholder
+ * Base class for all YARN tests. It creates {@link org.apache.hadoop.yarn.server.MiniYARNCluster} with multiple nodes.
  */
-public class PlacementHints {
+public abstract class DistributedBaseYarnTest {
+  @ClassRule
+  public static TemporaryFolder tmpFolder = new TemporaryFolder();
+  public static final int NUM_NODE_MANAGERS = 3;
+
+  @BeforeClass
+  public static final void init() throws IOException {
+    YarnTestUtils.initOnce(NUM_NODE_MANAGERS);
+  }
 }

@@ -51,10 +51,14 @@ public final class YarnTestUtils {
   private static final AtomicBoolean once = new AtomicBoolean(false);
 
   public static final boolean initOnce() throws IOException {
+    return initOnce(1);
+  }
+
+  public static final boolean initOnce(int numNodeManagers) throws IOException {
     if (once.compareAndSet(false, true)) {
       final TemporaryFolder tmpFolder = new TemporaryFolder();
       tmpFolder.create();
-      init(tmpFolder.newFolder());
+      init(tmpFolder.newFolder(), numNodeManagers);
 
       // add shutdown hook because we want to initialized/cleanup once
       Runtime.getRuntime().addShutdownHook(new Thread(new Runnable() {
@@ -72,7 +76,7 @@ public final class YarnTestUtils {
     return false;
   }
 
-  private static final void init(File folder) throws IOException {
+  private static final void init(File folder, int numNodeManagers) throws IOException {
     // Starts Zookeeper
     zkServer = InMemoryZKServer.builder().build();
     zkServer.startAndWait();
@@ -100,7 +104,7 @@ public final class YarnTestUtils {
     config.set("yarn.scheduler.minimum-allocation-mb", "128");
     config.set("yarn.nodemanager.delete.debug-delay-sec", "3600");
 
-    cluster = new MiniYARNCluster("test-cluster", 1, 1, 1);
+    cluster = new MiniYARNCluster("test-cluster", numNodeManagers, 1, 1);
     cluster.init(config);
     cluster.start();
 

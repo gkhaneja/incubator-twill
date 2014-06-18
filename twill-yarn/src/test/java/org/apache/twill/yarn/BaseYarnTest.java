@@ -24,7 +24,7 @@ import org.junit.rules.TemporaryFolder;
 import java.io.IOException;
 
 /**
- * Base class for all YARN tests.
+ * Base class for all YARN tests. It creates {@link org.apache.hadoop.yarn.server.MiniYARNCluster} with single node.
  */
 public abstract class BaseYarnTest {
   @ClassRule

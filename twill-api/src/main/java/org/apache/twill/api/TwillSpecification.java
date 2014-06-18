@@ -330,7 +330,6 @@ public interface TwillSpecification {
 
       @Override
       public PlacementPolicySetter add(PlacementPolicyGroup.Type type, String name, String...names) {
-        //TODO: Add a default implementation for placement hints, which specify no hints :)
         addPlacementPolicy(type, new PlacementHints(), name, names);
         return this;
       }
@@ -364,7 +363,6 @@ public interface TwillSpecification {
         for (PlacementPolicyGroup placementPolicyGroup : placementPolicy.getPlacementPolicyGroups(runnableNames)) {
           runnableNames.removeAll(placementPolicyGroup.getNames());
         }
-        //TODO: Default implementation for PlacementHints
         placementPolicy.add(new DefaultTwillSpecification.
                               DefaultPlacementPolicyGroup(runnableNames,
                                                           PlacementPolicyGroup.Type.UNCARED, new PlacementHints()));

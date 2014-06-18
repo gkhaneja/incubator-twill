@@ -124,7 +124,7 @@ final class RunningContainers {
                                                                  containerInfo.getNode(),
                                                                  controller);
       resourceReport.addRunResources(runnableName, resources);
-      //TODO: startSequence may contain a runnable twice if it's instances weren't adjacent.
+      //startSequence may contain a runnable twice if it's instances weren't adjacent.
       if (startSequence.isEmpty() || !runnableName.equals(startSequence.peekLast())) {
         startSequence.addLast(runnableName);
       }

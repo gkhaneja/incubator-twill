@@ -42,6 +42,7 @@ public final class TwillRunResourcesCodec implements JsonSerializer<TwillRunReso
     json.addProperty("containerId", src.getContainerId());
     json.addProperty("instanceId", src.getInstanceId());
     json.addProperty("host", src.getHost());
+    json.addProperty("node", src.getNode());
     json.addProperty("memoryMB", src.getMemoryMB());
     json.addProperty("virtualCores", src.getVirtualCores());
     if (src.getDebugPort() != null) {
