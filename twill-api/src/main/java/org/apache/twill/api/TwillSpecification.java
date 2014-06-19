@@ -65,36 +65,71 @@ public interface TwillSpecification {
    */
   interface PlacementPolicyGroup {
 
+    /**
+     * Defines different types of Placement Policies.
+     */
     enum Type {
-      DEFAULT,
+      //Runnables should be scattered over different nodes
       DISTRIBUTED,
+      //No specific placement policy, but placement hints are provided
+      DEFAULT,
+      //Neither Placement hints nor placement policy is specified
       UNCARED
     }
 
+    /**
+     * @return Set of {@link org.apache.twill.api.TwillRunnable} names that belong to this group.
+     */
     Set<String> getNames();
 
+    /**
+     * @return {@link org.apache.twill.api.TwillSpecification.PlacementPolicyGroup.Type} of this group.
+     */
     Type getType();
 
+    /**
+     * @return {@link org.apache.twill.api.PlacementHints} for this group.
+     */
     PlacementHints getPlacementHints();
   }
 
   /**
    * Defines all the {@link org.apache.twill.api.TwillSpecification.PlacementPolicyGroup Placement Policies}
-   * for a Twill Application.
+   * for the Twill Application.
    */
-
   interface PlacementPolicy {
 
+    /**
+     * @param {@link PlacementPolicyGroup} representing a placement policy to be added the application.
+     */
     void add(PlacementPolicyGroup placementPolicyGroup);
 
+    /**
+     * @return list of {@link org.apache.twill.api.TwillSpecification.PlacementPolicyGroup} for the application.
+     */
     List<PlacementPolicyGroup> getPlacementPolicyGroups();
 
+    /**
+     * @param order {@link org.apache.twill.api.TwillSpecification.Order}.
+     * @return list of {@link PlacementPolicyGroup} of runnables belonging to the given {@link Order}.
+     */
     List<PlacementPolicyGroup> getPlacementPolicyGroups(Order order);
 
+    /**
+     * @param runnableNames a list of runnable names.
+     * @return list of {@link PlacementPolicyGroup} for the given set of runnables.
+     */
     List<PlacementPolicyGroup> getPlacementPolicyGroups(Set<String> runnableNames);
 
+    /**
+     * @param runnableName a runnable name.
+     * @return {@link org.apache.twill.api.TwillSpecification.PlacementPolicyGroup} of the given runnable.
+     */
     PlacementPolicyGroup getPlacementPolicyGroup(String runnableName);
 
+    /**
+     * @return the number of placement policies for the application.
+     */
     int size();
   }
 
