@@ -15,31 +15,51 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.twill.internal.appmaster;
 
-import org.apache.hadoop.yarn.api.records.Resource;
-import org.apache.twill.api.ResourceSpecification;
+package org.apache.twill.api;
+
+import com.google.common.collect.ImmutableList;
+
+import java.util.ArrayList;
+import java.util.List;
 
 /**
- * Represents a single runnable instance.
+ * Represents a list of hosts
  */
-public class RunnableInstance {
 
-  String runnableName;
-  int instanceId;
-  Resource resource;
+public class Hosts {
+  List<String> hosts;
 
-  public RunnableInstance(String runnableName, int instanceId, Resource resource) {
-    this.runnableName = runnableName;
-    this.instanceId = instanceId;
-    this.resource = resource;
+  public Hosts(List<String> hosts) {
+    this.hosts = hosts;
   }
 
-  public Resource getResource() {
-    return this.resource;
+  /**
+   * Creates an instance of {@link org.apache.twill.api.Hosts}.
+   * @param host
+   * @param moreHosts
+   * @return
+   */
+  public static Hosts of(String host, String...moreHosts) {
+    ArrayList<String> hosts = new ArrayList<String>();
+    hosts.add(host);
+    for (String another : moreHosts) {
+      hosts.add(another);
+    }
+    return new Hosts(hosts);
+  }
+
+  /**
+   * Get the list of hosts.
+   * @return
+   */
+  public List<String> get() {
+    return ImmutableList.copyOf(hosts);
   }
 
   public String toString() {
-    return runnableName + "-" + instanceId;
+    return "" + this.hosts;
   }
+
+
 }

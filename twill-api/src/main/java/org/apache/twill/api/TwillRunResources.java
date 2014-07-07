@@ -45,7 +45,6 @@ public interface TwillRunResources {
   String getHost();
 
   /**
-   *
    * @return the node id the runnable is running on.
    */
   String getNode();

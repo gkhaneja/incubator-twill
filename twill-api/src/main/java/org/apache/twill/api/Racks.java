@@ -15,11 +15,49 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.apache.twill.api;
 
+import com.google.common.collect.ImmutableList;
+
+import java.util.ArrayList;
+import java.util.List;
+
 /**
- * Class for users to specify placement hints such as hosts and racks.
- * TODO: Currently a placeholder
+ * Represents a list of Racks
  */
-public class PlacementHints {
+
+public class Racks {
+  List<String> racks;
+
+  public Racks(List<String> racks) {
+    this.racks = racks;
+  }
+
+  /**
+   * Creates an instance of {@link org.apache.twill.api.Racks}.
+   * @param rack
+   * @param moreRacks
+   * @return
+   */
+  public static Racks of(String rack, String...moreRacks) {
+    ArrayList<String> racks = new ArrayList<String>();
+    racks.add(rack);
+    for (String another : moreRacks) {
+      racks.add(another);
+    }
+    return new Racks(racks);
+  }
+
+  /**
+   * Get the lists racks.
+   * @return
+   */
+  public List<String> get() {
+    return ImmutableList.copyOf(racks);
+  }
+
+  public String toString() {
+    return "" + this.racks;
+  }
 }

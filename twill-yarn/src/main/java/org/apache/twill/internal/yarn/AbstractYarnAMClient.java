@@ -26,6 +26,7 @@ import com.google.common.util.concurrent.AbstractIdleService;
 import org.apache.hadoop.yarn.api.records.ContainerId;
 import org.apache.hadoop.yarn.api.records.Priority;
 import org.apache.hadoop.yarn.api.records.Resource;
+import org.apache.hadoop.yarn.client.api.AMRMClient;
 import org.apache.hadoop.yarn.util.ConverterUtils;
 import org.apache.twill.internal.ProcessLauncher;
 import org.apache.twill.internal.appmaster.RunnableProcessLauncher;
@@ -165,7 +166,7 @@ public abstract class AbstractYarnAMClient<T> extends AbstractIdleService implem
           String[] racks = this.racks.isEmpty() ? null : this.racks.toArray(new String[this.racks.size()]);
 
           for (int i = 0; i < count; i++) {
-            T request = createContainerRequest(priority, capability, hosts, racks);
+            T request = createContainerRequest(priority, capability, hosts, racks, relaxLocality);
             containerRequests.put(id, request);
             requests.add(request);
           }
@@ -179,14 +180,14 @@ public abstract class AbstractYarnAMClient<T> extends AbstractIdleService implem
 
   @Override
   public final void addToBlacklist(String node) {
-    if (!blacklistAdditions.contains(node)) {
+    if (!blacklistAdditions.contains(node) && !blacklistedResources.contains(node)) {
       blacklistAdditions.add(node);
     }
   }
 
   @Override
   public final void removeFromBlacklist(String node) {
-    if (!blacklistRemovals.contains(node)) {
+    if (!blacklistRemovals.contains(node) && blacklistedResources.contains(node)) {
       blacklistRemovals.add(node);
     }
   }
@@ -213,6 +214,20 @@ public abstract class AbstractYarnAMClient<T> extends AbstractIdleService implem
    * @return A {@link Resource} instance representing the adjusted result.
    */
   protected abstract Resource adjustCapability(Resource capability);
+
+  /**
+   * Creates a container request based on the given requirement.
+   *
+   * @param priority The priority of the request.
+   * @param capability The resource capability.
+   * @param hosts Sets of hosts. Could be {@code null}.
+   * @param racks Sets of racks. Could be {@code null}.
+   * @param relaxLocality If set {@coe false}, locality constraints will not be relaxed.
+   * @return A container request.
+   */
+  protected abstract T createContainerRequest(Priority priority, Resource capability,
+                                              @Nullable String[] hosts, @Nullable String[] racks,
+                                              boolean relaxLocality);
 
   /**
    * Creates a container request based on the given requirement.

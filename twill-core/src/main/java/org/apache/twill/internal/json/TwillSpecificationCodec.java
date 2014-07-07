@@ -26,7 +26,8 @@ import com.google.gson.JsonParseException;
 import com.google.gson.JsonSerializationContext;
 import com.google.gson.JsonSerializer;
 import org.apache.twill.api.EventHandlerSpecification;
-import org.apache.twill.api.PlacementHints;
+import org.apache.twill.api.Hosts;
+import org.apache.twill.api.Racks;
 import org.apache.twill.api.RuntimeSpecification;
 import org.apache.twill.api.TwillSpecification;
 import org.apache.twill.internal.DefaultEventHandlerSpecification;
@@ -51,8 +52,8 @@ final class TwillSpecificationCodec implements JsonSerializer<TwillSpecification
                                             new TypeToken<Map<String, RuntimeSpecification>>() { }.getType()));
     json.add("orders", context.serialize(src.getOrders(),
                                          new TypeToken<List<TwillSpecification.Order>>() { }.getType()));
-    json.add("placementPolicy", context.serialize(src.getPlacementPolicy(),
-                                         new TypeToken<TwillSpecification.PlacementPolicy>() { }.getType()));
+    json.add("placementPolicies", context.serialize(src.getPlacementPolicies(),
+                                         new TypeToken<List<TwillSpecification.PlacementPolicy>>() { }.getType()));
     EventHandlerSpecification eventHandler = src.getEventHandler();
     if (eventHandler != null) {
       json.add("handler", context.serialize(eventHandler, EventHandlerSpecification.class));
@@ -71,8 +72,8 @@ final class TwillSpecificationCodec implements JsonSerializer<TwillSpecification
       jsonObj.get("runnables"), new TypeToken<Map<String, RuntimeSpecification>>() { }.getType());
     List<TwillSpecification.Order> orders = context.deserialize(
       jsonObj.get("orders"), new TypeToken<List<TwillSpecification.Order>>() { }.getType());
-    TwillSpecification.PlacementPolicy placementPolicy = context.deserialize(
-      jsonObj.get("placementPolicy"), new TypeToken<TwillSpecification.PlacementPolicy>() { }.getType());
+    List<TwillSpecification.PlacementPolicy> placementPolicies = context.deserialize(
+      jsonObj.get("placementPolicies"), new TypeToken<List<TwillSpecification.PlacementPolicy>>() { }.getType());
 
     JsonElement handler = jsonObj.get("handler");
     EventHandlerSpecification eventHandler = null;
@@ -80,7 +81,7 @@ final class TwillSpecificationCodec implements JsonSerializer<TwillSpecification
       eventHandler = context.deserialize(handler, EventHandlerSpecification.class);
     }
 
-    return new DefaultTwillSpecification(name, runnables, orders, placementPolicy, eventHandler);
+    return new DefaultTwillSpecification(name, runnables, orders, placementPolicies, eventHandler);
   }
 
   static final class TwillSpecificationOrderCoder implements JsonSerializer<TwillSpecification.Order>,
@@ -113,9 +114,10 @@ final class TwillSpecificationCodec implements JsonSerializer<TwillSpecification
     public JsonElement serialize(TwillSpecification.PlacementPolicy src, Type typeOfSrc,
                                  JsonSerializationContext context) {
       JsonObject json = new JsonObject();
-      json.add("groups", context.serialize(src.getPlacementPolicyGroups(),
-                                           new TypeToken<List<TwillSpecification.PlacementPolicyGroup>>() { }
-                                                                                                      .getType()));
+      json.add("names", context.serialize(src.getNames(), new TypeToken<Set<String>>() { }.getType()));
+      json.addProperty("type", src.getType().name());
+      json.add("hosts", context.serialize(src.getHosts(), new TypeToken<List<String>>() { }.getType()));
+      json.add("racks", context.serialize(src.getRacks(), new TypeToken<List<String>>() { }.getType()));
       return json;
     }
 
@@ -124,32 +126,13 @@ final class TwillSpecificationCodec implements JsonSerializer<TwillSpecification
                                                           JsonDeserializationContext context)
       throws JsonParseException {
       JsonObject jsonObj = json.getAsJsonObject();
-      List<TwillSpecification.PlacementPolicyGroup> groups = context.deserialize(
-        jsonObj.get("groups"), new TypeToken<List<TwillSpecification.PlacementPolicyGroup>>() { }.getType());
-      return new DefaultTwillSpecification.DefaultPlacementPolicy(groups);
-    }
-  }
-
-  static final class TwillSpecificationPlacementPolicyGroupCoder implements
-    JsonSerializer<TwillSpecification.PlacementPolicyGroup>, JsonDeserializer<TwillSpecification.PlacementPolicyGroup> {
-
-    @Override
-    public JsonElement serialize(TwillSpecification.PlacementPolicyGroup src,
-                                 Type typeOfSrc, JsonSerializationContext context) {
-      JsonObject json = new JsonObject();
-      json.add("names", context.serialize(src.getNames(), new TypeToken<Set<String>>() { }.getType()));
-      json.addProperty("type", src.getType().name());
-      return json;
-    }
-
-    @Override
-    public TwillSpecification.PlacementPolicyGroup deserialize(JsonElement json, Type typeOfT,
-                                                JsonDeserializationContext context) throws JsonParseException {
-      JsonObject jsonObj = json.getAsJsonObject();
       Set<String> names = context.deserialize(jsonObj.get("names"), new TypeToken<Set<String>>() { }.getType());
-      TwillSpecification.PlacementPolicyGroup.Type type =
-                              TwillSpecification.PlacementPolicyGroup.Type.valueOf(jsonObj.get("type").getAsString());
-      return new DefaultTwillSpecification.DefaultPlacementPolicyGroup(names, type, new PlacementHints());
+      TwillSpecification.PlacementPolicy.Type type =
+        TwillSpecification.PlacementPolicy.Type.valueOf(jsonObj.get("type").getAsString());
+      List<String> hosts = context.deserialize(jsonObj.get("hosts"), new TypeToken<List<String>>() { }.getType());
+      List<String> racks = context.deserialize(jsonObj.get("racks"), new TypeToken<List<String>>() { }.getType());
+
+      return new DefaultTwillSpecification.DefaultPlacementPolicy(names, type, new Hosts(hosts), new Racks(racks));
     }
   }
 

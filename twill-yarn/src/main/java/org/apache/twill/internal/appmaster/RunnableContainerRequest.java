@@ -34,12 +34,12 @@ import java.util.Map;
  */
 final class RunnableContainerRequest {
   private final TwillSpecification.Order.Type orderType;
-  private final Iterator<Map.Entry<RunnableInstance, Collection<RuntimeSpecification>>> requests;
+  private final Iterator<Map.Entry<AllocationSpecification, Collection<RuntimeSpecification>>> requests;
 
   RunnableContainerRequest(TwillSpecification.Order.Type orderType,
-                           Multimap<RunnableInstance, RuntimeSpecification> requests) {
+                           Map<AllocationSpecification, Collection<RuntimeSpecification>> requests) {
     this.orderType = orderType;
-    this.requests = requests.asMap().entrySet().iterator();
+    this.requests = requests.entrySet().iterator();
   }
 
   TwillSpecification.Order.Type getOrderType() {
@@ -51,8 +51,8 @@ final class RunnableContainerRequest {
    * @return The {@link Resource} and {@link Collection} of {@link RuntimeSpecification} or
    *         {@code null} if there is no more request.
    */
-  Map.Entry<RunnableInstance, ? extends Collection<RuntimeSpecification>> takeRequest() {
-    Map.Entry<RunnableInstance, Collection<RuntimeSpecification>> next = Iterators.getNext(requests, null);
+  Map.Entry<AllocationSpecification, ? extends Collection<RuntimeSpecification>> takeRequest() {
+    Map.Entry<AllocationSpecification, Collection<RuntimeSpecification>> next = Iterators.getNext(requests, null);
     return next == null ? null : Maps.immutableEntry(next.getKey(), ImmutableList.copyOf(next.getValue()));
   }
 }

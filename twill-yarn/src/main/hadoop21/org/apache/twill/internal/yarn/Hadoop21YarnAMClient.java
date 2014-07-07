@@ -96,6 +96,13 @@ public final class Hadoop21YarnAMClient extends AbstractYarnAMClient<AMRMClient.
 
   @Override
   protected AMRMClient.ContainerRequest createContainerRequest(Priority priority, Resource capability,
+                                                               @Nullable String[] hosts, @Nullable String[] racks,
+                                                               boolean relaxLocality) {
+    return new AMRMClient.ContainerRequest(capability, hosts, racks, priority, relaxLocality);
+  }
+
+  @Override
+  protected AMRMClient.ContainerRequest createContainerRequest(Priority priority, Resource capability,
                                                                @Nullable String[] hosts, @Nullable String[] racks) {
     return new AMRMClient.ContainerRequest(capability, hosts, racks, priority);
   }

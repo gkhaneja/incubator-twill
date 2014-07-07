@@ -1,0 +1,102 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package org.apache.twill.internal.appmaster;
+
+import org.apache.twill.api.TwillSpecification;
+
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+
+/**
+ * This class provides helper functions for operating on a set of Placement Policies.
+ */
+public class PlacementPolicyManager {
+  List<TwillSpecification.PlacementPolicy> placementPolicies;
+
+  public PlacementPolicyManager(List<TwillSpecification.PlacementPolicy> placementPolicies) {
+    this.placementPolicies = placementPolicies;
+  }
+
+  /**
+   * Given a set of runnables, get all runnables which belong to
+   * {@link org.apache.twill.api.TwillSpecification.PlacementPolicy.Type.DISTRIBUTED}.
+   * @param givenRunnables
+   * @return
+   */
+  public Set<String> getDistributedRunnables(Set<String> givenRunnables) {
+    Set<String> distributedRunnables = new HashSet<String>();
+    for (TwillSpecification.PlacementPolicy placementPolicy : placementPolicies) {
+      if (placementPolicy.getType().equals(TwillSpecification.PlacementPolicy.Type.DISTRIBUTED)) {
+        for (String runnable : givenRunnables) {
+          if (placementPolicy.getNames().contains(runnable)) {
+            distributedRunnables.add(runnable);
+          }
+        }
+      }
+    }
+    return distributedRunnables;
+  }
+
+  /**
+   * Given a runnable, get the type of placement policy. Returns {@link org.apache.twill.api.TwillSpecification
+   * .PlacementPolicy.Type.DEFAULT} if no placement policy is specified.
+   * @param runnableName
+   * @return
+   */
+  public TwillSpecification.PlacementPolicy.Type getPlacementPolicyType(String runnableName) {
+    for (TwillSpecification.PlacementPolicy placementPolicy : placementPolicies) {
+      if (placementPolicy.getNames().contains(runnableName)) {
+        return placementPolicy.getType();
+      }
+    }
+    return TwillSpecification.PlacementPolicy.Type.DEFAULT;
+  }
+
+  /**
+   * Get all runnables which belong to the same Placement policy as the given runnable.
+   * @param runnableName
+   * @return
+   */
+  public Set<String> getFellowRunnables(String runnableName) {
+    for (TwillSpecification.PlacementPolicy placementPolicy : placementPolicies) {
+      if (placementPolicy.getNames().contains(runnableName)) {
+        return placementPolicy.getNames();
+      }
+    }
+    return Collections.emptySet();
+  }
+
+  /**
+   * Get the placement policy of the runnable.
+   * Returns null if runnable does not belong to a placement policy.
+   * @param runnableName
+   * @return
+   */
+  public TwillSpecification.PlacementPolicy getPlacementPolicy(String runnableName) {
+    for (TwillSpecification.PlacementPolicy placementPolicy : placementPolicies) {
+      if (placementPolicy.getNames().contains(runnableName)) {
+        return placementPolicy;
+      }
+    }
+    return null;
+  }
+}

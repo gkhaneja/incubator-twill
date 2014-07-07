@@ -100,7 +100,7 @@ public final class YarnTestUtils {
     config.set("yarn.scheduler.minimum-allocation-mb", "128");
     config.set("yarn.nodemanager.delete.debug-delay-sec", "3600");
 
-    cluster = new MiniYARNCluster("test-cluster", 3, 1, 1);
+    cluster = new MiniYARNCluster("test-cluster", 2, 1, 1);
     cluster.init(config);
     cluster.start();
 
