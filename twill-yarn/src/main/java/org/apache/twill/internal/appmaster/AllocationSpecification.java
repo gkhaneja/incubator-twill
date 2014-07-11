@@ -24,6 +24,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.Map;
 
 /**
  * This class defines how the containers should be allocated.
@@ -97,11 +98,7 @@ public class AllocationSpecification {
     if (!(obj instanceof AllocationSpecification)) {
       return false;
     }
-    AllocationSpecification other = (AllocationSpecification) obj;
-    return compare(other);
-  }
-
-  private boolean compare(AllocationSpecification allocationSpecification) {
+    AllocationSpecification allocationSpecification = (AllocationSpecification) obj;
     if (this.instanceId == allocationSpecification.getInstanceId() &&
       this.resource.equals(allocationSpecification.getResource()) &&
       this.type.equals(allocationSpecification.getType())) {
@@ -122,16 +119,15 @@ public class AllocationSpecification {
    * @param map
    * @param runtimeSpec
    */
-  public static void addAllocationSpecification(
-                                             AllocationSpecification allocationSpecification,
-                                             HashMap<AllocationSpecification, Collection<RuntimeSpecification>> map,
-                                             RuntimeSpecification runtimeSpec) {
+  public static void addAllocationSpecification(AllocationSpecification allocationSpecification,
+                                                Map<AllocationSpecification, Collection<RuntimeSpecification>> map,
+                                                RuntimeSpecification runtimeSpec) {
     AllocationSpecification key = getKey(allocationSpecification, map);
     map.get(key).add(runtimeSpec);
   }
 
   private static AllocationSpecification getKey(AllocationSpecification allocationSpecification,
-                                    HashMap<AllocationSpecification, Collection<RuntimeSpecification>> map) {
+                                                Map<AllocationSpecification, Collection<RuntimeSpecification>> map) {
     Iterator<AllocationSpecification> iterator = map.keySet().iterator();
     while (iterator.hasNext()) {
       AllocationSpecification key = iterator.next();

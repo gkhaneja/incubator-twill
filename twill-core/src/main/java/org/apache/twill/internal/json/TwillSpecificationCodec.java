@@ -17,6 +17,7 @@
  */
 package org.apache.twill.internal.json;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.reflect.TypeToken;
 import com.google.gson.JsonDeserializationContext;
 import com.google.gson.JsonDeserializer;
@@ -132,7 +133,8 @@ final class TwillSpecificationCodec implements JsonSerializer<TwillSpecification
       List<String> hosts = context.deserialize(jsonObj.get("hosts"), new TypeToken<List<String>>() { }.getType());
       List<String> racks = context.deserialize(jsonObj.get("racks"), new TypeToken<List<String>>() { }.getType());
 
-      return new DefaultTwillSpecification.DefaultPlacementPolicy(names, type, new Hosts(hosts), new Racks(racks));
+      return new DefaultTwillSpecification.DefaultPlacementPolicy(names, type, new Hosts(ImmutableList.copyOf(hosts)),
+                                                                               new Racks(ImmutableList.copyOf(racks)));
     }
   }
 

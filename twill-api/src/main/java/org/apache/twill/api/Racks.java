@@ -24,40 +24,35 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Represents a list of Racks
+ * Represents a list of Racks.
  */
 
 public class Racks {
-  List<String> racks;
+  ImmutableList<String> racks;
 
-  public Racks(List<String> racks) {
+  public Racks(ImmutableList<String> racks) {
     this.racks = racks;
   }
 
   /**
    * Creates an instance of {@link org.apache.twill.api.Racks}.
-   * @param rack
-   * @param moreRacks
-   * @return
+   * @param rack A rack to be added.
+   * @param moreRacks A list of racks to be added.
+   * @return An instance of {@link org.apache.twill.api.Racks} containing specified racks.
    */
   public static Racks of(String rack, String...moreRacks) {
-    ArrayList<String> racks = new ArrayList<String>();
-    racks.add(rack);
-    for (String another : moreRacks) {
-      racks.add(another);
-    }
-    return new Racks(racks);
+    return new Racks(new ImmutableList.Builder<String>().add(rack).add(moreRacks).build());
   }
 
   /**
-   * Get the lists racks.
-   * @return
+   * Get the list of racks.
+   * @return list of racks.
    */
   public List<String> get() {
-    return ImmutableList.copyOf(racks);
+    return this.racks;
   }
 
   public String toString() {
-    return "" + this.racks;
+    return this.racks.toString();
   }
 }

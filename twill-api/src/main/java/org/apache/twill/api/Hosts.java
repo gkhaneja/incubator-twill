@@ -24,41 +24,36 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Represents a list of hosts
+ * Represents a list of hosts.
  */
 
 public class Hosts {
-  List<String> hosts;
+  ImmutableList<String> hosts;
 
-  public Hosts(List<String> hosts) {
+  public Hosts(ImmutableList<String> hosts) {
     this.hosts = hosts;
   }
 
   /**
    * Creates an instance of {@link org.apache.twill.api.Hosts}.
-   * @param host
-   * @param moreHosts
-   * @return
+   * @param host A host to be added.
+   * @param moreHosts A list of hosts to be added.
+   * @return An instance of {@link org.apache.twill.api.Hosts} containing specified hosts.
    */
   public static Hosts of(String host, String...moreHosts) {
-    ArrayList<String> hosts = new ArrayList<String>();
-    hosts.add(host);
-    for (String another : moreHosts) {
-      hosts.add(another);
-    }
-    return new Hosts(hosts);
+    return new Hosts(new ImmutableList.Builder<String>().add(host).add(moreHosts).build());
   }
 
   /**
    * Get the list of hosts.
-   * @return
+   * @return list of hosts.
    */
   public List<String> get() {
-    return ImmutableList.copyOf(hosts);
+    return this.hosts;
   }
 
   public String toString() {
-    return "" + this.hosts;
+    return this.hosts.toString();
   }
 
 
