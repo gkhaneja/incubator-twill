@@ -79,7 +79,7 @@ public interface TwillSpecification {
     }
 
     /**
-     * @return Set of {@link org.apache.twill.api.TwillRunnable runnables} that belongs to this placement policy.
+     * @return Set of {@link org.apache.twill.api.TwillRunnable} names that belongs to this placement policy.
      */
     Set<String> getNames();
 
@@ -89,12 +89,12 @@ public interface TwillSpecification {
     Type getType();
 
     /**
-     * @return {@link org.apache.twill.api.Hosts Hosts} for this placement policy.
+     * @return list of hosts associated with this placement policy.
      */
     List<String> getHosts();
 
     /**
-     * @return {@link org.apache.twill.api.Racks Racks} for this placement policy.
+     * @return list of racks associated with this placement policy.
      */
     List<String> getRacks();
   }
@@ -305,61 +305,103 @@ public interface TwillSpecification {
       }
     }
 
+    /**
+     * Interface to add placement policies to the application.
+     */
     public interface MorePlacementPolicies {
-      PlacementPolicySetter add(Hosts hosts, String name, String... names);
 
-      PlacementPolicySetter add(Racks racks, String name, String... names);
+      /**
+       * Specify hosts for a list of runnables.
+       * @param hosts {@link org.apache.twill.api.Hosts} specifying a list of hosts.
+       * @param runnableName a runnable name.
+       * @param runnableNames a list of runnable names.
+       * @return A reference to either add more placement policies or skip to defining execution order.
+       */
+      PlacementPolicySetter add(Hosts hosts, String runnableName, String... runnableNames);
 
-      PlacementPolicySetter add(Hosts hosts, Racks racks, String name, String... names);
+      /**
+       * Specify racks for a list of runnables.
+       * @param racks {@link org.apache.twill.api.Racks} specifying a list of racks.
+       * @param runnableName a runnable name.
+       * @param runnableNames a list of runnable names.
+       * @return A reference to either add more placement policies or skip to defining execution order.
+       */
+      PlacementPolicySetter add(Racks racks, String runnableName, String... runnableNames);
 
-      PlacementPolicySetter add(PlacementPolicy.Type type, String name, String... names);
+      /**
+       * Specify hosts and racks for a list of runnables.
+       * @param hosts {@link org.apache.twill.api.Hosts} specifying a list of hosts.
+       * @param racks {@link org.apache.twill.api.Racks} specifying a list of racks.
+       * @param runnableName a runnable name.
+       * @param runnableNames a list of runnable names.
+       * @return A reference to either add more placement policies or skip to defining execution order.
+       */
+      PlacementPolicySetter add(Hosts hosts, Racks racks, String runnableName, String... runnableNames);
+
+      /**
+       * Specify a placement policy for a list of runnables.
+       * @param type {@link PlacementPolicy.Type} specifying a specific placement policy type.
+       * @param runnableName a runnable name.
+       * @param runnableNames a list of runnable names.
+       * @return A reference to either add more placement policies or skip to defining execution order.
+       */
+      PlacementPolicySetter add(PlacementPolicy.Type type, String runnableName, String... runnableNames);
     }
 
+    /**
+     * Interface to define execution order after adding placement policies.
+     */
     public interface AfterPlacementPolicy {
+      /**
+       * Start defining execution order.
+       */
       FirstOrder withOrder();
 
+      /**
+       * No particular execution order is needed.
+       */
       AfterOrder anyOrder();
     }
 
     public final class PlacementPolicySetter implements MorePlacementPolicies, AfterPlacementPolicy {
 
       @Override
-      public PlacementPolicySetter add(Hosts hosts, String name, String... names) {
-        return addPlacementPolicy(PlacementPolicy.Type.DEFAULT, hosts, null, name, names);
+      public PlacementPolicySetter add(Hosts hosts, String runnableName, String... runnableNames) {
+        return addPlacementPolicy(PlacementPolicy.Type.DEFAULT, hosts, null, runnableName, runnableNames);
       }
 
       @Override
-      public PlacementPolicySetter add(Racks racks, String name, String... names) {
-        return addPlacementPolicy(PlacementPolicy.Type.DEFAULT, null, racks, name, names);
+      public PlacementPolicySetter add(Racks racks, String runnableName, String... runnableNames) {
+        return addPlacementPolicy(PlacementPolicy.Type.DEFAULT, null, racks, runnableName, runnableNames);
       }
 
       @Override
-      public PlacementPolicySetter add(Hosts hosts, Racks racks, String name, String... names) {
-        return addPlacementPolicy(PlacementPolicy.Type.DEFAULT, hosts, racks, name, names);
+      public PlacementPolicySetter add(Hosts hosts, Racks racks, String runnableName, String... runnableNames) {
+        return addPlacementPolicy(PlacementPolicy.Type.DEFAULT, hosts, racks, runnableName, runnableNames);
       }
 
       @Override
       public PlacementPolicySetter add(PlacementPolicy.Type type,
-                                       String name, String...names) {
-        return addPlacementPolicy(type, null, null, name, names);
+                                       String runnableName, String...runnableNames) {
+        return addPlacementPolicy(type, null, null, runnableName, runnableNames);
       }
 
       private PlacementPolicySetter addPlacementPolicy(PlacementPolicy.Type type, Hosts hosts, Racks racks,
-                                                       String name, String...names) {
-        Preconditions.checkArgument(name != null, "Name cannot be null.");
-        Preconditions.checkArgument(runnables.containsKey(name), "Runnable not exists.");
-        Preconditions.checkArgument(!contains(name),
-                                  "Runnable (" + name + ") cannot belong to more than one Placement Policy");
-        Set<String> runnableNames = Sets.newHashSet(name);
-        for (String runnableName : names) {
-          Preconditions.checkArgument(runnableName != null, "Name cannot be null.");
-          Preconditions.checkArgument(runnables.containsKey(runnableName), "Runnable not exists.");
-          Preconditions.checkArgument(!contains(runnableName),
+                                                       String runnableName, String...runnableNames) {
+        Preconditions.checkArgument(runnableName != null, "Name cannot be null.");
+        Preconditions.checkArgument(runnables.containsKey(runnableName), "Runnable not exists.");
+        Preconditions.checkArgument(!contains(runnableName),
                                   "Runnable (" + runnableName + ") cannot belong to more than one Placement Policy");
-          runnableNames.add(runnableName);
+        Set<String> runnableNamesSet = Sets.newHashSet(runnableName);
+        for (String name : runnableNames) {
+          Preconditions.checkArgument(name != null, "Name cannot be null.");
+          Preconditions.checkArgument(runnables.containsKey(name), "Runnable not exists.");
+          Preconditions.checkArgument(!contains(name),
+                                  "Runnable (" + name + ") cannot belong to more than one Placement Policy");
+          runnableNamesSet.add(name);
         }
         placementPolicies.add(new DefaultTwillSpecification.
-                                      DefaultPlacementPolicy(runnableNames, type, hosts, racks));
+                                      DefaultPlacementPolicy(runnableNamesSet, type, hosts, racks));
         return this;
       }
 

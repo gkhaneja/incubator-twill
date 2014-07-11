@@ -64,13 +64,13 @@ public final class TwillSpecificationAdapter {
               .registerTypeAdapter(TwillSpecification.Order.class, new TwillSpecificationOrderCoder())
               .registerTypeAdapter(TwillSpecification.PlacementPolicy.class,
                                    new TwillSpecificationPlacementPolicyCoder())
-                .registerTypeAdapter(EventHandlerSpecification.class, new EventHandlerSpecificationCoder())
-                .registerTypeAdapter(RuntimeSpecification.class, new RuntimeSpecificationCodec())
-                .registerTypeAdapter(TwillRunnableSpecification.class, new TwillRunnableSpecificationCodec())
-                .registerTypeAdapter(ResourceSpecification.class, new ResourceSpecificationCodec())
-                .registerTypeAdapter(LocalFile.class, new LocalFileCodec())
-                .registerTypeAdapterFactory(new TwillSpecificationTypeAdapterFactory())
-                .create();
+              .registerTypeAdapter(EventHandlerSpecification.class, new EventHandlerSpecificationCoder())
+              .registerTypeAdapter(RuntimeSpecification.class, new RuntimeSpecificationCodec())
+              .registerTypeAdapter(TwillRunnableSpecification.class, new TwillRunnableSpecificationCodec())
+              .registerTypeAdapter(ResourceSpecification.class, new ResourceSpecificationCodec())
+              .registerTypeAdapter(LocalFile.class, new LocalFileCodec())
+              .registerTypeAdapterFactory(new TwillSpecificationTypeAdapterFactory())
+              .create();
   }
 
   public String toJson(TwillSpecification spec) {
