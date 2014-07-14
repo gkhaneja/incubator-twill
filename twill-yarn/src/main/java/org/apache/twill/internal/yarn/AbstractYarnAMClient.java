@@ -118,9 +118,6 @@ public abstract class AbstractYarnAMClient<T> extends AbstractIdleService implem
 
     if (!blacklistAdditions.isEmpty() || !blacklistRemovals.isEmpty()) {
       updateBlacklist(blacklistAdditions, blacklistRemovals);
-      //No need to take care of duplicates. AMRMClient handles that
-      blacklistedResources.removeAll(blacklistRemovals);
-      blacklistedResources.addAll(blacklistAdditions);
       blacklistAdditions.clear();
       blacklistRemovals.clear();
     }
@@ -182,6 +179,8 @@ public abstract class AbstractYarnAMClient<T> extends AbstractIdleService implem
   public final void addToBlacklist(String node) {
     if (!blacklistAdditions.contains(node) && !blacklistedResources.contains(node)) {
       blacklistAdditions.add(node);
+      blacklistedResources.add(node);
+      blacklistRemovals.remove(node);
     }
   }
 
@@ -189,12 +188,15 @@ public abstract class AbstractYarnAMClient<T> extends AbstractIdleService implem
   public final void removeFromBlacklist(String node) {
     if (!blacklistRemovals.contains(node) && blacklistedResources.contains(node)) {
       blacklistRemovals.add(node);
+      blacklistedResources.remove(node);
+      blacklistAdditions.remove(node);
     }
   }
 
   @Override
   public final void clearBlacklist() {
     blacklistRemovals.addAll(blacklistedResources);
+    blacklistedResources.clear();
     blacklistAdditions.clear();
   }
 

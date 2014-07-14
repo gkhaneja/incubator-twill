@@ -28,7 +28,7 @@ import java.util.List;
  */
 
 public class Hosts {
-  ImmutableList<String> hosts;
+  private ImmutableList<String> hosts;
 
   public Hosts(ImmutableList<String> hosts) {
     this.hosts = hosts;

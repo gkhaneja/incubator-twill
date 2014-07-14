@@ -372,8 +372,6 @@ public final class ApplicationMasterService extends AbstractTwillService {
     while (isRunning()) {
       // Call allocate. It has to be made at first in order to be able to get cluster resource availability.
       amClient.allocate(0.0f, allocateHandler);
-      //End of heartbeat
-      LOG.info("--------------------------------------------------------------------------------------------");
 
       // Looks for containers requests.
       if (provisioning.isEmpty() && runnableContainerRequests.isEmpty() && runningContainers.isEmpty()) {
@@ -393,22 +391,33 @@ public final class ApplicationMasterService extends AbstractTwillService {
 
       // Nothing in provision, makes the next batch of provision request
       if (provisioning.isEmpty() && currentRequest != null) {
+        //Clear Blacklist before moving on to new request.
+        clearBlacklist();
         //Check the allocation strategy
-        if (currentRequest.getKey().getType().equals(AllocationSpecification.Type.ALLOCATE_ONE_INSTANCE_AT_A_TIME)) {
-          if (placementPolicyManager.getPlacementPolicyType(
-            currentRequest.getKey().getRunnableName()).equals(TwillSpecification.PlacementPolicy.Type.DISTRIBUTED)) {
-            //update blacklist with hosts which are running runnables, present in the given placement policy
-            for (String runnable : placementPolicyManager.getFellowRunnables(
-                                                                          currentRequest.getKey().getRunnableName())) {
-              Collection<TwillRunResources> twillRunResources =
-                runningContainers.getResourceReport().getRunnableResources(runnable);
-              for (TwillRunResources twillRunResource : twillRunResources) {
-                addToBlacklist(twillRunResource.getHost());
-              }
+        AllocationSpecification currentAllocationSpecification = currentRequest.getKey();
+        switch (currentAllocationSpecification.getType()) {
+          case ALLOCATE_ONE_INSTANCE_AT_A_TIME:
+            //Check the placement policy
+            TwillSpecification.PlacementPolicy placementPolicy =
+              placementPolicyManager.getPlacementPolicy(currentAllocationSpecification.getRunnableName());
+            switch (placementPolicy.getType()) {
+              case DISTRIBUTED:
+                //update blacklist with hosts which are running runnables, present in the given placement policy
+                for (String runnable : placementPolicyManager.getFellowRunnables(
+                  currentRequest.getKey().getRunnableName())) {
+                  Collection<TwillRunResources> twillRunResources =
+                    runningContainers.getResourceReport().getRunnableResources(runnable);
+                  for (TwillRunResources twillRunResource : twillRunResources) {
+                    addToBlacklist(twillRunResource.getHost());
+                  }
+                }
+                break;
+              case DEFAULT:
+              default:
             }
-          }
-        } else {
-          clearBlacklist();
+            break;
+          case DEFAULT:
+          default:
         }
         addContainerRequests(currentRequest.getKey().getResource(), currentRequest.getValue(), provisioning,
                              currentRequest.getKey().getType());
@@ -459,13 +468,16 @@ public final class ApplicationMasterService extends AbstractTwillService {
     // Invoke event handler for provision request timeout
     Map<String, ExpectedContainers.ExpectedCount> expiredRequests = expectedContainers.getAll();
     Map<String, Integer> runningCounts = runningContainers.countAll();
+    Map<String, Integer> completedContainerCount = runningContainers.getCompletedContainerCount();
 
     List<EventHandler.TimeoutEvent> timeoutEvents = Lists.newArrayList();
     for (Map.Entry<String, ExpectedContainers.ExpectedCount> entry : expiredRequests.entrySet()) {
       String runnableName = entry.getKey();
       ExpectedContainers.ExpectedCount expectedCount = entry.getValue();
       int runningCount = runningCounts.containsKey(runnableName) ? runningCounts.get(runnableName) : 0;
-      if (expectedCount.getCount() != runningCount) {
+      int completedCount = completedContainerCount.containsKey(runnableName) ?
+                                                        completedContainerCount.get(runnableName) : 0;
+      if (expectedCount.getCount() != runningCount + completedCount) {
         timeoutEvents.add(new EventHandler.TimeoutEvent(runnableName, expectedCount.getCount(),
                                                                    runningCount, expectedCount.getTimestamp()));
       }
@@ -531,18 +543,33 @@ public final class ApplicationMasterService extends AbstractTwillService {
                                                          AllocationSpecification.Type.ALLOCATE_ONE_INSTANCE_AT_A_TIME,
                                                          runnableName,
                                                          instanceId);
-          AllocationSpecification.addAllocationSpecification(allocationSpecification, requestsMap, runtimeSpec);
+                             addAllocationSpecification(allocationSpecification, requestsMap, runtimeSpec);
         }
       }
       for (String runnableName : defaultRunnables) {
         RuntimeSpecification runtimeSpec = twillSpec.getRunnables().get(runnableName);
         Resource capability = createCapability(runtimeSpec.getResourceSpecification());
         AllocationSpecification allocationSpecification = new AllocationSpecification(capability);
-        AllocationSpecification.addAllocationSpecification(allocationSpecification, requestsMap, runtimeSpec);
+                             addAllocationSpecification(allocationSpecification, requestsMap, runtimeSpec);
       }
       requests.add(new RunnableContainerRequest(order.getType(), requestsMap));
     }
     return requests;
+  }
+
+  /**
+   * Helper method to create {@link org.apache.twill.internal.appmaster.RunnableContainerRequest}.
+   * @param allocationSpecification
+   * @param map
+   * @param runtimeSpec
+   */
+  private void addAllocationSpecification(AllocationSpecification allocationSpecification,
+                                                Map<AllocationSpecification, Collection<RuntimeSpecification>> map,
+                                                RuntimeSpecification runtimeSpec) {
+    if (!map.containsKey(allocationSpecification)) {
+      map.put(allocationSpecification, Lists.<RuntimeSpecification>newLinkedList());
+    }
+    map.get(allocationSpecification).add(runtimeSpec);
   }
 
   /**
@@ -823,11 +850,11 @@ public final class ApplicationMasterService extends AbstractTwillService {
                                                           AllocationSpecification.Type.ALLOCATE_ONE_INSTANCE_AT_A_TIME,
                                                           runnableName,
                                                           instanceId);
-        AllocationSpecification.addAllocationSpecification(allocationSpecification, requestsMap, runtimeSpec);
+                              addAllocationSpecification(allocationSpecification, requestsMap, runtimeSpec);
       }
     } else {
       AllocationSpecification allocationSpecification = new AllocationSpecification(capability);
-      AllocationSpecification.addAllocationSpecification(allocationSpecification, requestsMap, runtimeSpec);
+                              addAllocationSpecification(allocationSpecification, requestsMap, runtimeSpec);
     }
     return new RunnableContainerRequest(order.getType(), requestsMap);
   }

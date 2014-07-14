@@ -18,13 +18,6 @@
 package org.apache.twill.internal.appmaster;
 
 import org.apache.hadoop.yarn.api.records.Resource;
-import org.apache.twill.api.RuntimeSpecification;
-
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.Map;
 
 /**
  * This class defines how the containers should be allocated.
@@ -43,22 +36,22 @@ public class AllocationSpecification {
   /**
    * Resource specification of runnables.
    */
-  Resource resource;
+  private Resource resource;
 
   /**
    * Allocation strategy Type.
    */
-  Type type;
+  private Type type;
 
   /**
    * Name of runnable. Set to null if the class represents more than one runnable.
    */
-  String runnableName;
+  private String runnableName;
 
   /**
    * Instance number for the runnable. Set to  0 if the class represents more than one instance / runnable.
    */
-  int instanceId;
+  private int instanceId;
 
   public AllocationSpecification(Resource resource) {
     this(resource, Type.DEFAULT, null, 0);
@@ -113,30 +106,8 @@ public class AllocationSpecification {
     return false;
   }
 
-  /**
-   * Helper method to create {@link org.apache.twill.internal.appmaster.RunnableContainerRequest}.
-   * @param allocationSpecification
-   * @param map
-   * @param runtimeSpec
-   */
-  public static void addAllocationSpecification(AllocationSpecification allocationSpecification,
-                                                Map<AllocationSpecification, Collection<RuntimeSpecification>> map,
-                                                RuntimeSpecification runtimeSpec) {
-    AllocationSpecification key = getKey(allocationSpecification, map);
-    map.get(key).add(runtimeSpec);
+  @Override
+  public int hashCode() {
+    return this.resource.hashCode();
   }
-
-  private static AllocationSpecification getKey(AllocationSpecification allocationSpecification,
-                                                Map<AllocationSpecification, Collection<RuntimeSpecification>> map) {
-    Iterator<AllocationSpecification> iterator = map.keySet().iterator();
-    while (iterator.hasNext()) {
-      AllocationSpecification key = iterator.next();
-      if (allocationSpecification.equals(key)) {
-        return key;
-      }
-    }
-    map.put(allocationSpecification, new HashSet<RuntimeSpecification>());
-    return allocationSpecification;
-  }
-
 }

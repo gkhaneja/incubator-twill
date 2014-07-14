@@ -28,7 +28,7 @@ import java.util.List;
  */
 
 public class Racks {
-  ImmutableList<String> racks;
+  private ImmutableList<String> racks;
 
   public Racks(ImmutableList<String> racks) {
     this.racks = racks;

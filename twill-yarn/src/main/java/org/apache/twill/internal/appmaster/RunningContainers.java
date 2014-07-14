@@ -82,6 +82,7 @@ final class RunningContainers {
 
   // Map from runnableName to a BitSet, with the <instanceId> bit turned on for having an instance running.
   private final Map<String, BitSet> runnableInstances;
+  private final Map<String, Integer> completedContainerCount;
   private final DefaultResourceReport resourceReport;
   private final Deque<String> startSequence;
   private final Lock containerLock;
@@ -90,6 +91,7 @@ final class RunningContainers {
   RunningContainers(String appId, TwillRunResources appMasterResources) {
     containers = HashBasedTable.create();
     runnableInstances = Maps.newHashMap();
+    completedContainerCount = Maps.newHashMap();
     startSequence = Lists.newLinkedList();
     containerLock = new ReentrantLock();
     containerChange = containerLock.newCondition();
@@ -129,7 +131,6 @@ final class RunningContainers {
         startSequence.addLast(runnableName);
       }
       containerChange.signalAll();
-
     } finally {
       containerLock.unlock();
     }
@@ -210,6 +211,15 @@ final class RunningContainers {
     containerLock.lock();
     try {
       return ImmutableMap.copyOf(Maps.transformValues(runnableInstances, BITSET_CARDINALITY));
+    } finally {
+      containerLock.unlock();
+    }
+  }
+
+  Map<String, Integer> getCompletedContainerCount() {
+    containerLock.lock();
+    try {
+      return ImmutableMap.copyOf(completedContainerCount);
     } finally {
       containerLock.unlock();
     }
@@ -329,6 +339,10 @@ final class RunningContainers {
         TwillContainerController controller = completedEntry.getValue();
         controller.completed(exitStatus);
 
+        if (!completedContainerCount.containsKey(runnableName)) {
+          completedContainerCount.put(runnableName, 0);
+        }
+        completedContainerCount.put(runnableName, completedContainerCount.get(runnableName) + 1);
         removeInstanceId(runnableName, getInstanceId(controller.getRunId()));
         resourceReport.removeRunnableResources(runnableName, containerId);
       }
