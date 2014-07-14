@@ -131,6 +131,7 @@ final class RunningContainers {
         startSequence.addLast(runnableName);
       }
       containerChange.signalAll();
+      
     } finally {
       containerLock.unlock();
     }
