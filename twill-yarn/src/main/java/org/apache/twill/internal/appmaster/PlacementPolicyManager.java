@@ -36,9 +36,9 @@ public class PlacementPolicyManager {
   }
 
   /**
-   * Given a set of runnables, get all runnables which belong to DISTRIBUTED placement policy.
-   * @param givenRunnables Name of runnable.
-   * @return Set of runnables.
+   * Given a set of runnables, get all runnables which belong to DISTRIBUTED placement policies.
+   * @param givenRunnables Set of runnables.
+   * @return Subset of runnables, which belong to DISTRIBUTED placement policies.
    */
   public Set<String> getDistributedRunnables(Set<String> givenRunnables) {
     Set<String> distributedRunnables = getAllDistributedRunnables();
@@ -63,7 +63,7 @@ public class PlacementPolicyManager {
   /**
    * Get all runnables which belong to the same Placement policy as the given runnable.
    * @param runnableName Name of runnable.
-   * @return Set of runnables.
+   * @return Set of runnables, with same placement policy.
    */
   public Set<String> getFellowRunnables(String runnableName) {
     for (TwillSpecification.PlacementPolicy placementPolicy : placementPolicies) {
@@ -89,6 +89,9 @@ public class PlacementPolicyManager {
     return null;
   }
 
+  /**
+   * Gets all runnables which belong to DISTRIBUTED placement policies.
+   */
   private Set<String> getAllDistributedRunnables() {
     Set<String> distributedRunnables = Sets.newHashSet();
     for (TwillSpecification.PlacementPolicy placementPolicy : placementPolicies) {
