@@ -18,43 +18,46 @@
 
 package org.apache.twill.api;
 
-import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Sets;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.Collections;
+import java.util.Set;
 
 /**
  * Represents a list of hosts.
  */
 
 public class Hosts {
-  private ImmutableList<String> hosts;
+  private final Set<String> hosts;
 
-  public Hosts(ImmutableList<String> hosts) {
-    this.hosts = hosts;
+  public Hosts(Set<String> hosts) {
+    this.hosts = ImmutableSet.copyOf(hosts);
   }
 
   /**
-   * Creates an instance of {@link org.apache.twill.api.Hosts}.
+   * Convenience method to create an instance of {@link org.apache.twill.api.Hosts}.
    * @param host A host to be added.
    * @param moreHosts A list of hosts to be added.
    * @return An instance of {@link org.apache.twill.api.Hosts} containing specified hosts.
    */
   public static Hosts of(String host, String...moreHosts) {
-    return new Hosts(new ImmutableList.Builder<String>().add(host).add(moreHosts).build());
+    Set<String> hosts = Sets.newHashSet();
+    hosts.add(host);
+    Collections.addAll(hosts, moreHosts);
+    return new Hosts(hosts);
   }
 
   /**
    * Get the list of hosts.
    * @return list of hosts.
    */
-  public List<String> get() {
+  public Set<String> get() {
     return this.hosts;
   }
 
+  @Override
   public String toString() {
     return this.hosts.toString();
   }
-
-
 }

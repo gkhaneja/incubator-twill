@@ -26,7 +26,6 @@ import com.google.common.util.concurrent.AbstractIdleService;
 import org.apache.hadoop.yarn.api.records.ContainerId;
 import org.apache.hadoop.yarn.api.records.Priority;
 import org.apache.hadoop.yarn.api.records.Resource;
-import org.apache.hadoop.yarn.client.api.AMRMClient;
 import org.apache.hadoop.yarn.util.ConverterUtils;
 import org.apache.twill.internal.ProcessLauncher;
 import org.apache.twill.internal.appmaster.RunnableProcessLauncher;
@@ -55,9 +54,9 @@ public abstract class AbstractYarnAMClient<T> extends AbstractIdleService implem
   private final List<T> requests;
   // List of requests pending to remove through allocate call
   private final List<T> removes;
-  //List of pending blacklist additions
+  //List of pending blacklist additions for the next allocate call
   private final List<String> blacklistAdditions;
-  //List of pending blacklist removals
+  //List of pending blacklist removals for the next allocate call
   private final List<String> blacklistRemovals;
   //Keep track of blacklisted resources
   private final List<String> blacklistedResources;
@@ -176,20 +175,20 @@ public abstract class AbstractYarnAMClient<T> extends AbstractIdleService implem
   }
 
   @Override
-  public final void addToBlacklist(String node) {
-    if (!blacklistAdditions.contains(node) && !blacklistedResources.contains(node)) {
-      blacklistAdditions.add(node);
-      blacklistedResources.add(node);
-      blacklistRemovals.remove(node);
+  public final void addToBlacklist(String resource) {
+    if (!blacklistAdditions.contains(resource) && !blacklistedResources.contains(resource)) {
+      blacklistAdditions.add(resource);
+      blacklistedResources.add(resource);
+      blacklistRemovals.remove(resource);
     }
   }
 
   @Override
-  public final void removeFromBlacklist(String node) {
-    if (!blacklistRemovals.contains(node) && blacklistedResources.contains(node)) {
-      blacklistRemovals.add(node);
-      blacklistedResources.remove(node);
-      blacklistAdditions.remove(node);
+  public final void removeFromBlacklist(String resource) {
+    if (!blacklistRemovals.contains(resource) && blacklistedResources.contains(resource)) {
+      blacklistRemovals.add(resource);
+      blacklistedResources.remove(resource);
+      blacklistAdditions.remove(resource);
     }
   }
 
@@ -207,8 +206,6 @@ public abstract class AbstractYarnAMClient<T> extends AbstractIdleService implem
     }
   }
 
-
-
   /**
    * Adjusts the given resource capability to fit in the cluster limit.
    *
@@ -224,7 +221,7 @@ public abstract class AbstractYarnAMClient<T> extends AbstractIdleService implem
    * @param capability The resource capability.
    * @param hosts Sets of hosts. Could be {@code null}.
    * @param racks Sets of racks. Could be {@code null}.
-   * @param relaxLocality If set {@coe false}, locality constraints will not be relaxed.
+   * @param relaxLocality If set {@code false}, locality constraints will not be relaxed.
    * @return A container request.
    */
   protected abstract T createContainerRequest(Priority priority, Resource capability,

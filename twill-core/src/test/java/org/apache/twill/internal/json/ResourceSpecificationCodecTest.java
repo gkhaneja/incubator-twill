@@ -26,8 +26,6 @@ import org.junit.Assert;
 import org.junit.Test;
 import org.unitils.reflectionassert.ReflectionAssert;
 
-import java.util.Arrays;
-
 /**
  * Maybe this checkstyle rule needs to be removed.
  */

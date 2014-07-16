@@ -111,9 +111,9 @@ public interface YarnAMClient extends Service {
 
   ContainerRequestBuilder addContainerRequest(Resource capability, int count);
 
-  void addToBlacklist(String node);
+  void addToBlacklist(String resource);
 
-  void removeFromBlacklist(String node);
+  void removeFromBlacklist(String resource);
 
   void clearBlacklist();
 

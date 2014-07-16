@@ -25,7 +25,6 @@ import org.apache.twill.api.Racks;
 import org.apache.twill.api.ResourceSpecification;
 import org.apache.twill.api.TwillApplication;
 import org.apache.twill.api.TwillController;
-import org.apache.twill.api.TwillRunResources;
 import org.apache.twill.api.TwillRunner;
 import org.apache.twill.api.TwillSpecification;
 import org.apache.twill.api.logging.PrinterLogHandler;
@@ -38,11 +37,6 @@ import org.slf4j.LoggerFactory;
 import java.io.PrintWriter;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Random;
 import java.util.concurrent.TimeUnit;
 
 
@@ -63,17 +57,10 @@ public class PlacementPolicyTestRun extends BaseYarnTest {
       ServiceDiscovered discovered1 = controller.discoverService("IMAlive");
       Assert.assertTrue(YarnTestUtils.waitForSize(discovered1, 6, 60));
 
-      //ServiceDiscovered discovered2 = controller.discoverService("rack");
-      //Assert.assertTrue(YarnTestUtils.waitForSize(discovered2, 2, 60));
     } finally {
       controller.stopAndWait();
     }
   }
-
-  /*@Test
-  public void testPlacementPolicyAPI() throws InterruptedException {
-
-  }*/
 
   @Test
   public void testDistributedPlacementPolicy() throws InterruptedException {
@@ -86,25 +73,12 @@ public class PlacementPolicyTestRun extends BaseYarnTest {
       ServiceDiscovered discovered1 = controller.discoverService("IMAlive");
       Assert.assertTrue(YarnTestUtils.waitForSize(discovered1, 2, 60));
 
-      //ServiceDiscovered discovered2 = controller.discoverService("distributed");
-      //Assert.assertTrue(YarnTestUtils.waitForSize(discovered2, 1, 60));
-
       //This is a negative test case. Since MiniYArnCluster has only one host,
       //it should not be able to run second DISTRIBUTED runnable.
       //Assert.assertTrue(!YarnTestUtils.waitForSize(discovered2, 2, 60));
     } finally {
       controller.stopAndWait();
     }
-  }
-
-  private static final List<String> getNodes(TwillController controller, String runnable) {
-    List<String> nodes = new ArrayList<String>();
-    Collection<TwillRunResources> resources =  controller.getResourceReport().getRunnableResources(runnable);
-    Iterator<TwillRunResources> iterator = resources.iterator();
-    while (iterator.hasNext()) {
-      nodes.add(iterator.next().getNode());
-    }
-    return nodes;
   }
 
   /**

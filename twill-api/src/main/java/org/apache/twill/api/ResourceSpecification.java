@@ -17,13 +17,7 @@
  */
 package org.apache.twill.api;
 
-import com.google.common.collect.Iterables;
 import org.apache.twill.internal.DefaultResourceSpecification;
-
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.LinkedList;
-import java.util.List;
 
 /**
  * This interface provides specifications for resource requirements including set and get methods

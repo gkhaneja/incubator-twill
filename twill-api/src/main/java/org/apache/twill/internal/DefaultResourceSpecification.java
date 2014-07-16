@@ -17,11 +17,7 @@
  */
 package org.apache.twill.internal;
 
-import com.google.common.collect.ImmutableList;
 import org.apache.twill.api.ResourceSpecification;
-
-import java.util.Collections;
-import java.util.List;
 
 /**
  * Straightforward implementation of {@link org.apache.twill.api.ResourceSpecification}.

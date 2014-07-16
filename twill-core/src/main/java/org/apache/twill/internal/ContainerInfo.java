@@ -28,8 +28,6 @@ public interface ContainerInfo {
 
   InetAddress getHost();
 
-  String getNode();
-
   int getPort();
 
   int getMemoryMB();

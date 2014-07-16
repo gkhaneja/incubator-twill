@@ -54,11 +54,6 @@ public final class Hadoop21YarnContainerInfo implements YarnContainerInfo {
   }
 
   @Override
-  public String getNode() {
-    return container.getNodeId().toString();
-  }
-
-  @Override
   public int getPort() {
     return container.getNodeId().getPort();
   }

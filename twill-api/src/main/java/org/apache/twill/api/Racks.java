@@ -18,40 +18,45 @@
 
 package org.apache.twill.api;
 
-import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Sets;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.Collections;
+import java.util.Set;
 
 /**
  * Represents a list of Racks.
  */
 
 public class Racks {
-  private ImmutableList<String> racks;
+  private final Set<String> racks;
 
-  public Racks(ImmutableList<String> racks) {
-    this.racks = racks;
+  public Racks(Set<String> racks) {
+    this.racks = ImmutableSet.copyOf(racks);
   }
 
   /**
-   * Creates an instance of {@link org.apache.twill.api.Racks}.
+   * Convenience method to create an instance of {@link org.apache.twill.api.Racks}.
    * @param rack A rack to be added.
    * @param moreRacks A list of racks to be added.
    * @return An instance of {@link org.apache.twill.api.Racks} containing specified racks.
    */
   public static Racks of(String rack, String...moreRacks) {
-    return new Racks(new ImmutableList.Builder<String>().add(rack).add(moreRacks).build());
+    Set<String> racks = Sets.newHashSet();
+    racks.add(rack);
+    Collections.addAll(racks, moreRacks);
+    return new Racks(racks);
   }
 
   /**
    * Get the list of racks.
    * @return list of racks.
    */
-  public List<String> get() {
+  public Set<String> get() {
     return this.racks;
   }
 
+  @Override
   public String toString() {
     return this.racks.toString();
   }

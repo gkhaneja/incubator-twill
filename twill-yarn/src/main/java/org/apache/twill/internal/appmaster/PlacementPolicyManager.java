@@ -18,11 +18,10 @@
 
 package org.apache.twill.internal.appmaster;
 
+import com.google.common.collect.Sets;
 import org.apache.twill.api.TwillSpecification;
 
-import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
@@ -91,7 +90,7 @@ public class PlacementPolicyManager {
   }
 
   private Set<String> getAllDistributedRunnables() {
-    Set<String> distributedRunnables = new HashSet<String>();
+    Set<String> distributedRunnables = Sets.newHashSet();
     for (TwillSpecification.PlacementPolicy placementPolicy : placementPolicies) {
       if (placementPolicy.getType().equals(TwillSpecification.PlacementPolicy.Type.DISTRIBUTED)) {
         distributedRunnables.addAll(placementPolicy.getNames());

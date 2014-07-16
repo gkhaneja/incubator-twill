@@ -20,7 +20,6 @@ package org.apache.twill.internal.appmaster;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterators;
 import com.google.common.collect.Maps;
-import com.google.common.collect.Multimap;
 import org.apache.hadoop.yarn.api.records.Resource;
 import org.apache.twill.api.RuntimeSpecification;
 import org.apache.twill.api.TwillSpecification;

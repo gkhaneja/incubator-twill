@@ -69,7 +69,7 @@ public interface TwillSpecification {
      */
     enum Type {
       /**
-       * Runnables should be scattered over different hosts, as far as possible.
+       * Runnables should be scattered over different hosts.
        */
       DISTRIBUTED,
       /**
@@ -89,14 +89,14 @@ public interface TwillSpecification {
     Type getType();
 
     /**
-     * @return list of hosts associated with this placement policy.
+     * @return Set of hosts associated with this placement policy.
      */
-    List<String> getHosts();
+    Set<String> getHosts();
 
     /**
-     * @return list of racks associated with this placement policy.
+     * @return Set of racks associated with this placement policy.
      */
-    List<String> getRacks();
+    Set<String> getRacks();
   }
 
   /**
@@ -312,7 +312,7 @@ public interface TwillSpecification {
 
       /**
        * Specify hosts for a list of runnables.
-       * @param hosts {@link org.apache.twill.api.Hosts} specifying a list of hosts.
+       * @param hosts {@link org.apache.twill.api.Hosts} specifying a set of hosts.
        * @param runnableName a runnable name.
        * @param runnableNames a list of runnable names.
        * @return A reference to either add more placement policies or skip to defining execution order.
@@ -321,7 +321,7 @@ public interface TwillSpecification {
 
       /**
        * Specify racks for a list of runnables.
-       * @param racks {@link org.apache.twill.api.Racks} specifying a list of racks.
+       * @param racks {@link org.apache.twill.api.Racks} specifying a set of racks.
        * @param runnableName a runnable name.
        * @param runnableNames a list of runnable names.
        * @return A reference to either add more placement policies or skip to defining execution order.
@@ -330,8 +330,8 @@ public interface TwillSpecification {
 
       /**
        * Specify hosts and racks for a list of runnables.
-       * @param hosts {@link org.apache.twill.api.Hosts} specifying a list of hosts.
-       * @param racks {@link org.apache.twill.api.Racks} specifying a list of racks.
+       * @param hosts {@link org.apache.twill.api.Hosts} specifying a set of hosts.
+       * @param racks {@link org.apache.twill.api.Racks} specifying a set of racks.
        * @param runnableName a runnable name.
        * @param runnableNames a list of runnable names.
        * @return A reference to either add more placement policies or skip to defining execution order.
@@ -381,8 +381,7 @@ public interface TwillSpecification {
       }
 
       @Override
-      public PlacementPolicySetter add(PlacementPolicy.Type type,
-                                       String runnableName, String...runnableNames) {
+      public PlacementPolicySetter add(PlacementPolicy.Type type, String runnableName, String...runnableNames) {
         return addPlacementPolicy(type, null, null, runnableName, runnableNames);
       }
 
@@ -391,17 +390,17 @@ public interface TwillSpecification {
         Preconditions.checkArgument(runnableName != null, "Name cannot be null.");
         Preconditions.checkArgument(runnables.containsKey(runnableName), "Runnable not exists.");
         Preconditions.checkArgument(!contains(runnableName),
-                                  "Runnable (" + runnableName + ") cannot belong to more than one Placement Policy");
+                                    "Runnable (" + runnableName + ") cannot belong to more than one Placement Policy");
         Set<String> runnableNamesSet = Sets.newHashSet(runnableName);
         for (String name : runnableNames) {
           Preconditions.checkArgument(name != null, "Name cannot be null.");
           Preconditions.checkArgument(runnables.containsKey(name), "Runnable not exists.");
           Preconditions.checkArgument(!contains(name),
-                                  "Runnable (" + name + ") cannot belong to more than one Placement Policy");
+                                      "Runnable (" + name + ") cannot belong to more than one Placement Policy");
           runnableNamesSet.add(name);
         }
-        placementPolicies.add(new DefaultTwillSpecification.
-                                      DefaultPlacementPolicy(runnableNamesSet, type, hosts, racks));
+        placementPolicies.add(
+          new DefaultTwillSpecification.DefaultPlacementPolicy(runnableNamesSet, type, hosts, racks));
         return this;
       }
 

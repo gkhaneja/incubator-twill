@@ -49,11 +49,6 @@ public final class EnvContainerInfo implements ContainerInfo {
   }
 
   @Override
-  public String getNode() {
-    return host.getHostAddress();
-  }
-
-  @Override
   public int getPort() {
     return port;
   }

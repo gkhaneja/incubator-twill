@@ -17,7 +17,6 @@
  */
 package org.apache.twill.internal.json;
 
-import com.google.common.collect.ImmutableList;
 import com.google.common.reflect.TypeToken;
 import com.google.gson.JsonDeserializationContext;
 import com.google.gson.JsonDeserializer;
@@ -53,8 +52,8 @@ final class TwillSpecificationCodec implements JsonSerializer<TwillSpecification
                                             new TypeToken<Map<String, RuntimeSpecification>>() { }.getType()));
     json.add("orders", context.serialize(src.getOrders(),
                                          new TypeToken<List<TwillSpecification.Order>>() { }.getType()));
-    json.add("placementPolicies", context.serialize(src.getPlacementPolicies(),
-                                         new TypeToken<List<TwillSpecification.PlacementPolicy>>() { }.getType()));
+    json.add("placementPolicies", context.serialize(
+      src.getPlacementPolicies(), new TypeToken<List<TwillSpecification.PlacementPolicy>>() { }.getType()));
     EventHandlerSpecification eventHandler = src.getEventHandler();
     if (eventHandler != null) {
       json.add("handler", context.serialize(eventHandler, EventHandlerSpecification.class));
@@ -117,8 +116,8 @@ final class TwillSpecificationCodec implements JsonSerializer<TwillSpecification
       JsonObject json = new JsonObject();
       json.add("names", context.serialize(src.getNames(), new TypeToken<Set<String>>() { }.getType()));
       json.addProperty("type", src.getType().name());
-      json.add("hosts", context.serialize(src.getHosts(), new TypeToken<List<String>>() { }.getType()));
-      json.add("racks", context.serialize(src.getRacks(), new TypeToken<List<String>>() { }.getType()));
+      json.add("hosts", context.serialize(src.getHosts(), new TypeToken<Set<String>>() { }.getType()));
+      json.add("racks", context.serialize(src.getRacks(), new TypeToken<Set<String>>() { }.getType()));
       return json;
     }
 
@@ -130,11 +129,9 @@ final class TwillSpecificationCodec implements JsonSerializer<TwillSpecification
       Set<String> names = context.deserialize(jsonObj.get("names"), new TypeToken<Set<String>>() { }.getType());
       TwillSpecification.PlacementPolicy.Type type =
         TwillSpecification.PlacementPolicy.Type.valueOf(jsonObj.get("type").getAsString());
-      List<String> hosts = context.deserialize(jsonObj.get("hosts"), new TypeToken<List<String>>() { }.getType());
-      List<String> racks = context.deserialize(jsonObj.get("racks"), new TypeToken<List<String>>() { }.getType());
-
-      return new DefaultTwillSpecification.DefaultPlacementPolicy(names, type, new Hosts(ImmutableList.copyOf(hosts)),
-                                                                               new Racks(ImmutableList.copyOf(racks)));
+      Set<String> hosts = context.deserialize(jsonObj.get("hosts"), new TypeToken<Set<String>>() { }.getType());
+      Set<String> racks = context.deserialize(jsonObj.get("racks"), new TypeToken<Set<String>>() { }.getType());
+      return new DefaultTwillSpecification.DefaultPlacementPolicy(names, type, new Hosts(hosts), new Racks(racks));
     }
   }
 

@@ -17,11 +17,11 @@
  */
 package org.apache.twill.internal.appmaster;
 
+import com.google.common.base.Objects;
 import org.apache.hadoop.yarn.api.records.Resource;
 
 /**
  * This class defines how the containers should be allocated.
- *
  */
 public class AllocationSpecification {
 
@@ -91,19 +91,11 @@ public class AllocationSpecification {
     if (!(obj instanceof AllocationSpecification)) {
       return false;
     }
-    AllocationSpecification allocationSpecification = (AllocationSpecification) obj;
-    if (this.instanceId == allocationSpecification.getInstanceId() &&
-      this.resource.equals(allocationSpecification.getResource()) &&
-      this.type.equals(allocationSpecification.getType())) {
-      if (this.runnableName == null && allocationSpecification.getRunnableName() == null) {
-        return true;
-      } else if (this.runnableName != null && allocationSpecification.getRunnableName() != null) {
-        if (this.runnableName.equals(allocationSpecification.getRunnableName())) {
-          return true;
-        }
-      }
-    }
-    return false;
+    AllocationSpecification other = (AllocationSpecification) obj;
+    return (instanceId == other.instanceId) &&
+      Objects.equal(resource, other.resource) &&
+      Objects.equal(type, other.type) &&
+      Objects.equal(runnableName, other.runnableName);
   }
 
   @Override

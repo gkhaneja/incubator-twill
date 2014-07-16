@@ -123,15 +123,14 @@ final class RunningContainers {
                                                                  containerInfo.getVirtualCores(),
                                                                  containerInfo.getMemoryMB(),
                                                                  containerInfo.getHost().getHostName(),
-                                                                 containerInfo.getNode(),
                                                                  controller);
       resourceReport.addRunResources(runnableName, resources);
-      //startSequence may contain a runnable twice if it's instances weren't adjacent.
+
       if (startSequence.isEmpty() || !runnableName.equals(startSequence.peekLast())) {
         startSequence.addLast(runnableName);
       }
       containerChange.signalAll();
-      
+
     } finally {
       containerLock.unlock();
     }
@@ -217,6 +216,9 @@ final class RunningContainers {
     }
   }
 
+  /**
+   * Returns a Map containing number of successfully completed containers for all runnables.
+   */
   Map<String, Integer> getCompletedContainerCount() {
     containerLock.lock();
     try {
@@ -340,10 +342,12 @@ final class RunningContainers {
         TwillContainerController controller = completedEntry.getValue();
         controller.completed(exitStatus);
 
-        if (!completedContainerCount.containsKey(runnableName)) {
-          completedContainerCount.put(runnableName, 0);
+        if (exitStatus == ContainerExitCodes.SUCCESS) {
+          if (!completedContainerCount.containsKey(runnableName)) {
+            completedContainerCount.put(runnableName, 0);
+          }
+          completedContainerCount.put(runnableName, completedContainerCount.get(runnableName) + 1);
         }
-        completedContainerCount.put(runnableName, completedContainerCount.get(runnableName) + 1);
         removeInstanceId(runnableName, getInstanceId(controller.getRunId()));
         resourceReport.removeRunnableResources(runnableName, containerId);
       }
@@ -462,9 +466,9 @@ final class RunningContainers {
     private Integer dynamicDebugPort = null;
 
     private DynamicTwillRunResources(int instanceId, String containerId,
-                                     int cores, int memoryMB, String host, String node,
+                                     int cores, int memoryMB, String host,
                                      TwillContainerController controller) {
-      super(instanceId, containerId, cores, memoryMB, host, node, null);
+      super(instanceId, containerId, cores, memoryMB, host, null);
       this.controller = controller;
     }
 

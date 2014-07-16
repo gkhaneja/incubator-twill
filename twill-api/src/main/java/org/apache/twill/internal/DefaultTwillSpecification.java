@@ -112,8 +112,6 @@ public final class DefaultTwillSpecification implements TwillSpecification {
     }
   }
 
-
-
   /**
    * Straightforward implementation of {@link org.apache.twill.api.TwillSpecification.PlacementPolicy}.
    */
@@ -132,10 +130,7 @@ public final class DefaultTwillSpecification implements TwillSpecification {
     }
 
     public DefaultPlacementPolicy(Iterable<String> names, Type type) {
-      this.names = ImmutableSet.copyOf(names);
-      this.type = type;
-      this.hosts = null;
-      this.racks = null;
+      this(names, type, null, null);
     }
 
     @Override
@@ -152,9 +147,9 @@ public final class DefaultTwillSpecification implements TwillSpecification {
      * @return {@link org.apache.twill.api.Hosts Hosts} for this placement policy.
      */
     @Override
-    public List<String> getHosts() {
+    public Set<String> getHosts() {
       if (this.hosts == null) {
-        return Collections.emptyList();
+        return Collections.emptySet();
       }
       return this.hosts.get();
     }
@@ -163,9 +158,9 @@ public final class DefaultTwillSpecification implements TwillSpecification {
      * @return {@link org.apache.twill.api.Racks Racks} for this placement policy.
      */
     @Override
-    public List<String> getRacks() {
+    public Set<String> getRacks() {
       if (this.racks == null) {
-        return Collections.emptyList();
+        return Collections.emptySet();
       }
       return this.racks.get();
     }
