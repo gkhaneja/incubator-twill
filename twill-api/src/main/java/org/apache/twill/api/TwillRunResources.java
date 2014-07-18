@@ -45,6 +45,12 @@ public interface TwillRunResources {
   String getHost();
 
   /**
+   * Returns the port used by NodeManager on which runnable is provisioned.
+   * @return the port of the NodeManager the runnable is running on.
+   */
+  int getNMPort();
+
+  /**
    * @return id of the container the runnable is running in.
    */
   String getContainerId();

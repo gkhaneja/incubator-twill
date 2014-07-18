@@ -42,6 +42,7 @@ public final class TwillRunResourcesCodec implements JsonSerializer<TwillRunReso
     json.addProperty("containerId", src.getContainerId());
     json.addProperty("instanceId", src.getInstanceId());
     json.addProperty("host", src.getHost());
+    json.addProperty("nmPort", src.getNMPort());
     json.addProperty("memoryMB", src.getMemoryMB());
     json.addProperty("virtualCores", src.getVirtualCores());
     if (src.getDebugPort() != null) {
@@ -60,6 +61,7 @@ public final class TwillRunResourcesCodec implements JsonSerializer<TwillRunReso
                                         jsonObj.get("virtualCores").getAsInt(),
                                         jsonObj.get("memoryMB").getAsInt(),
                                         jsonObj.get("host").getAsString(),
+                                        jsonObj.get("nmPort").getAsInt(),
                                         jsonObj.has("debugPort") ? jsonObj.get("debugPort").getAsInt() : null);
   }
 }

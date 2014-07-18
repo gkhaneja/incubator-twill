@@ -31,6 +31,11 @@ public final class Constants {
 
   public static final long PROVISION_TIMEOUT = 30000;
 
+  /**
+   * Maximum number of attempts for provisioning containers without relaxing any constraints.
+   */
+  public static final int MAX_CONSTRAINED_PROVISION_ATTEMPTS = 5;
+
   /** Memory size of AM. */
   public static final int APP_MASTER_MEMORY_MB = 512;
 

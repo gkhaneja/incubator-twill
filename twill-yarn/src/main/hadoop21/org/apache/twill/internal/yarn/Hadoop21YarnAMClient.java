@@ -95,6 +95,11 @@ public final class Hadoop21YarnAMClient extends AbstractYarnAMClient<AMRMClient.
   }
 
   @Override
+  public int getNMPort() {
+    return Integer.parseInt(System.getenv().get(ApplicationConstants.Environment.NM_PORT.name()));
+  }
+
+  @Override
   protected AMRMClient.ContainerRequest createContainerRequest(Priority priority, Resource capability,
                                                                @Nullable String[] hosts, @Nullable String[] racks,
                                                                boolean relaxLocality) {

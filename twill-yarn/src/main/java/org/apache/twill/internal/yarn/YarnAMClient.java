@@ -90,6 +90,8 @@ public interface YarnAMClient extends Service {
 
   String getHost();
 
+  int getNMPort();
+
   /**
    * Sets the tracker address and tracker url. This method should be called before calling {@link #start()}.
    */

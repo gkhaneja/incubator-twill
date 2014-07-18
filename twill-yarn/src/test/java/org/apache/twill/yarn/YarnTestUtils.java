@@ -21,7 +21,10 @@ import com.google.common.collect.Iterables;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hdfs.HdfsConfiguration;
 import org.apache.hadoop.hdfs.MiniDFSCluster;
+import org.apache.hadoop.yarn.api.records.NodeReport;
+import org.apache.hadoop.yarn.client.api.YarnClient;
 import org.apache.hadoop.yarn.conf.YarnConfiguration;
+import org.apache.hadoop.yarn.exceptions.YarnException;
 import org.apache.hadoop.yarn.server.MiniYARNCluster;
 import org.apache.twill.api.TwillRunner;
 import org.apache.twill.api.TwillRunnerService;
@@ -33,6 +36,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -47,6 +51,7 @@ public final class YarnTestUtils {
   private static MiniYARNCluster cluster;
   private static TwillRunnerService runnerService;
   private static YarnConfiguration config;
+  private static YarnClient yarnClient;
 
   private static final AtomicBoolean once = new AtomicBoolean(false);
 
@@ -99,13 +104,18 @@ public final class YarnTestUtils {
     config.set("yarn.nodemanager.vmem-check-enabled", "false");
     config.set("yarn.scheduler.minimum-allocation-mb", "128");
     config.set("yarn.nodemanager.delete.debug-delay-sec", "3600");
+    config.setBoolean(YarnConfiguration.RM_SCHEDULER_INCLUDE_PORT_IN_NODE_NAME, true);
 
-    cluster = new MiniYARNCluster("test-cluster", 2, 1, 1);
+    cluster = new MiniYARNCluster("test-cluster", 3, 1, 1);
     cluster.init(config);
     cluster.start();
 
     runnerService = createTwillRunnerService();
     runnerService.startAndWait();
+
+    yarnClient = YarnClient.createYarnClient();
+    yarnClient.init(config);
+    yarnClient.start();
   }
 
   public static final boolean finish() {
@@ -114,6 +124,7 @@ public final class YarnTestUtils {
       cluster.stop();
       dfsCluster.shutdown();
       zkServer.stopAndWait();
+      yarnClient.stop();
 
       return true;
     }
@@ -137,6 +148,10 @@ public final class YarnTestUtils {
     // disable tests stealing focus
     runner.setJVMOptions("-Djava.awt.headless=true");
     return runner;
+  }
+
+  public static final List<NodeReport> getNodeReports() throws IOException, YarnException {
+    return yarnClient.getNodeReports();
   }
 
   public static final <T> boolean waitForSize(Iterable<T> iterable, int count, int limit) throws InterruptedException {

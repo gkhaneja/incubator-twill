@@ -160,7 +160,7 @@ public final class ApplicationMasterService extends AbstractTwillService {
       }
     });
     expectedContainers = initExpectedContainers(twillSpec);
-    runningContainers = initRunningContainers(amClient.getContainerId(), amClient.getHost());
+    runningContainers = initRunningContainers(amClient.getContainerId(), amClient.getHost(), amClient.getNMPort());
     trackerService = new TrackerService(new Supplier<ResourceReport>() {
       @Override
       public ResourceReport get() {
@@ -220,13 +220,13 @@ public final class ApplicationMasterService extends AbstractTwillService {
   }
 
   private RunningContainers initRunningContainers(ContainerId appMasterContainerId,
-                                                  String appMasterHost) throws Exception {
+                                                  String appMasterHost, int nmPort) throws Exception {
     TwillRunResources appMasterResources = new DefaultTwillRunResources(
       0,
       appMasterContainerId.toString(),
       Integer.parseInt(System.getenv(EnvKeys.YARN_CONTAINER_VIRTUAL_CORES)),
       Integer.parseInt(System.getenv(EnvKeys.YARN_CONTAINER_MEMORY_MB)),
-      appMasterHost, null);
+      appMasterHost, nmPort, null);
     String appId = appMasterContainerId.getApplicationAttemptId().getApplicationId().toString();
     return new RunningContainers(appId, appMasterResources);
   }
@@ -362,6 +362,8 @@ public final class ApplicationMasterService extends AbstractTwillService {
       }
     };
 
+    int attemptsForCurrentRequest = 0;
+    boolean isRequestRelaxed = false;
     long nextTimeoutCheck = System.currentTimeMillis() + Constants.PROVISION_TIMEOUT;
     while (isRunning()) {
       // Call allocate. It has to be made at first in order to be able to get cluster resource availability.
@@ -389,6 +391,16 @@ public final class ApplicationMasterService extends AbstractTwillService {
         addContainerRequests(currentRequest.getKey().getResource(), currentRequest.getValue(), provisioning,
                              currentRequest.getKey().getType());
         currentRequest = null;
+        attemptsForCurrentRequest = 0;
+        isRequestRelaxed = false;
+      }
+
+      // Relax constraints if request has not been provisioned by Resource Manager, post maximum attempts.
+      if (!provisioning.isEmpty() && !isRequestRelaxed &&
+        ++attemptsForCurrentRequest > Constants.MAX_CONSTRAINED_PROVISION_ATTEMPTS) {
+        clearBlacklist();
+        LOG.warn("Relaxing provisioning constraint for request {}", provisioning.peek().getRequestId());
+        isRequestRelaxed = true;
       }
 
       nextTimeoutCheck = checkProvisionTimeout(nextTimeoutCheck);
@@ -419,7 +431,11 @@ public final class ApplicationMasterService extends AbstractTwillService {
           Collection<TwillRunResources> twillRunResources =
             runningContainers.getResourceReport().getRunnableResources(runnable);
           for (TwillRunResources twillRunResource : twillRunResources) {
+            // Yarn Resource Manager may include port in the node name depending on the setting
+            // YarnConfiguration.RM_SCHEDULER_INCLUDE_PORT_IN_NODE_NAME. It is safe to add both
+            // the names (with and without port) to the blacklist.
             addToBlacklist(twillRunResource.getHost());
+            addToBlacklist(twillRunResource.getHost() + ":" + twillRunResource.getNMPort());
           }
         }
       }
