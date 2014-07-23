@@ -133,18 +133,24 @@ public final class DefaultTwillSpecification implements TwillSpecification {
       this(names, type, null, null);
     }
 
+    /**
+     * @return Set of {@link org.apache.twill.api.TwillRunnable} names that belongs to this placement policy.
+     */
     @Override
     public Set<String> getNames() {
       return names;
     }
 
+    /**
+     * @return {@link org.apache.twill.api.TwillSpecification.PlacementPolicy.Type Type} of this placement policy.
+     */
     @Override
     public Type getType() {
       return type;
     }
 
     /**
-     * @return {@link org.apache.twill.api.Hosts Hosts} for this placement policy.
+     * @return Set of hosts associated with this placement policy.
      */
     @Override
     public Set<String> getHosts() {
@@ -155,7 +161,7 @@ public final class DefaultTwillSpecification implements TwillSpecification {
     }
 
     /**
-     * @return {@link org.apache.twill.api.Racks Racks} for this placement policy.
+     * @return Set of racks associated with this placement policy.
      */
     @Override
     public Set<String> getRacks() {

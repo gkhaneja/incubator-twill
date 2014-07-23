@@ -15,13 +15,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.apache.twill.api;
 
 import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Sets;
 
-import java.util.Collections;
+import java.util.Arrays;
 import java.util.Set;
 
 /**
@@ -35,6 +33,13 @@ public class Hosts {
     this.hosts = ImmutableSet.copyOf(hosts);
   }
 
+  public Hosts(String host, String...moreHosts) {
+    this.hosts = ImmutableSet.<String>builder()
+      .add(host)
+      .addAll(Arrays.asList(moreHosts))
+      .build();
+  }
+
   /**
    * Convenience method to create an instance of {@link org.apache.twill.api.Hosts}.
    * @param host A host to be added.
@@ -42,10 +47,7 @@ public class Hosts {
    * @return An instance of {@link org.apache.twill.api.Hosts} containing specified hosts.
    */
   public static Hosts of(String host, String...moreHosts) {
-    Set<String> hosts = Sets.newHashSet();
-    hosts.add(host);
-    Collections.addAll(hosts, moreHosts);
-    return new Hosts(hosts);
+    return new Hosts(host, moreHosts);
   }
 
   /**

@@ -15,13 +15,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.apache.twill.api;
 
 import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Sets;
 
-import java.util.Collections;
+import java.util.Arrays;
 import java.util.Set;
 
 /**
@@ -35,6 +33,13 @@ public class Racks {
     this.racks = ImmutableSet.copyOf(racks);
   }
 
+  public Racks(String rack, String...moreRacks) {
+    this.racks = ImmutableSet.<String>builder()
+      .add(rack)
+      .addAll(Arrays.asList(moreRacks))
+      .build();
+  }
+
   /**
    * Convenience method to create an instance of {@link org.apache.twill.api.Racks}.
    * @param rack A rack to be added.
@@ -42,10 +47,7 @@ public class Racks {
    * @return An instance of {@link org.apache.twill.api.Racks} containing specified racks.
    */
   public static Racks of(String rack, String...moreRacks) {
-    Set<String> racks = Sets.newHashSet();
-    racks.add(rack);
-    Collections.addAll(racks, moreRacks);
-    return new Racks(racks);
+    return new Racks(rack, moreRacks);
   }
 
   /**
