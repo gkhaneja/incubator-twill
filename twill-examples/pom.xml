@@ -37,4 +37,41 @@ limitations under the License.
         <twill.groupId>org.apache.twill</twill.groupId>
     </properties>
 
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <version>3.1</version>
+                <configuration>
+                    <source>1.6</source>
+                    <target>1.6</target>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.rat</groupId>
+                <artifactId>apache-rat-plugin</artifactId>
+                <version>0.10</version>
+                <configuration>
+                    <excludes>
+                        <exclude>.git/**/*</exclude>
+                        <exclude>**/*.iml</exclude>
+                        <exclude>target/**/*</exclude>
+                        <exclude>**/README</exclude>
+                        <exclude>src/test/resources/header.txt</exclude>
+                        <exclude>**/zookeeper.out</exclude>
+                    </excludes>
+                </configuration>
+                <executions>
+                    <execution>
+                        <phase>validate</phase>
+                        <goals>
+                            <goal>check</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
+
 </project>
