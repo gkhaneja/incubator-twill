@@ -24,17 +24,15 @@ import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.yarn.api.ApplicationConstants;
+import org.apache.hadoop.yarn.api.protocolrecords.AllocateResponse;
 import org.apache.hadoop.yarn.api.protocolrecords.RegisterApplicationMasterResponse;
 import org.apache.hadoop.yarn.api.records.Container;
 import org.apache.hadoop.yarn.api.records.ContainerStatus;
 import org.apache.hadoop.yarn.api.records.FinalApplicationStatus;
 import org.apache.hadoop.yarn.api.records.Priority;
 import org.apache.hadoop.yarn.api.records.Resource;
-import org.apache.hadoop.yarn.ipc.YarnRPC;
+import org.apache.hadoop.yarn.client.api.AMRMClient;
 import org.apache.twill.internal.appmaster.RunnableProcessLauncher;
-import org.apache.twill.internal.yarn.ports.AMRMClient;
-import org.apache.twill.internal.yarn.ports.AMRMClientImpl;
-import org.apache.twill.internal.yarn.ports.AllocationResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -42,33 +40,33 @@ import java.util.List;
 import javax.annotation.Nullable;
 
 /**
- *
+ * Wrapper class for AMRMClient for Hadoop version 2.2 or greater.
  */
-public final class Hadoop20YarnAMClient extends AbstractYarnAMClient<AMRMClient.ContainerRequest> {
+public final class Hadoop22YarnAMClient extends AbstractYarnAMClient<AMRMClient.ContainerRequest> {
 
-  private static final Logger LOG = LoggerFactory.getLogger(Hadoop20YarnAMClient.class);
+  private static final Logger LOG = LoggerFactory.getLogger(Hadoop21YarnAMClient.class);
+
   private static final Function<ContainerStatus, YarnContainerStatus> STATUS_TRANSFORM;
 
   static {
     STATUS_TRANSFORM = new Function<ContainerStatus, YarnContainerStatus>() {
       @Override
       public YarnContainerStatus apply(ContainerStatus status) {
-        return new Hadoop20YarnContainerStatus(status);
+        return new Hadoop21YarnContainerStatus(status);
       }
     };
   }
 
-  private final AMRMClient amrmClient;
-  private final YarnNMClient nmClient;
+  private final AMRMClient<AMRMClient.ContainerRequest> amrmClient;
+  private final Hadoop21YarnNMClient nmClient;
   private Resource maxCapability;
-  private Resource minCapability;
 
-  public Hadoop20YarnAMClient(Configuration conf) {
-    super(ApplicationConstants.AM_CONTAINER_ID_ENV);
+  public Hadoop22YarnAMClient(Configuration conf) {
+    super(ApplicationConstants.Environment.CONTAINER_ID.name());
 
-    this.amrmClient = new AMRMClientImpl(containerId.getApplicationAttemptId());
+    this.amrmClient = AMRMClient.createAMRMClient();
     this.amrmClient.init(conf);
-    this.nmClient = new Hadoop20YarnNMClient(YarnRPC.create(conf), conf);
+    this.nmClient = new Hadoop21YarnNMClient(conf);
   }
 
   @Override
@@ -77,61 +75,35 @@ public final class Hadoop20YarnAMClient extends AbstractYarnAMClient<AMRMClient.
     Preconditions.checkNotNull(trackerUrl, "Tracker URL not set.");
 
     amrmClient.start();
-
-    String url = String.format("%s:%d",
-                               trackerUrl.getHost(),
-                               trackerUrl.getPort() == -1 ? trackerUrl.getDefaultPort() : trackerUrl.getPort());
     RegisterApplicationMasterResponse response = amrmClient.registerApplicationMaster(trackerAddr.getHostName(),
                                                                                       trackerAddr.getPort(),
-                                                                                      url);
+                                                                                      trackerUrl.toString());
     maxCapability = response.getMaximumResourceCapability();
-    minCapability = response.getMinimumResourceCapability();
+    nmClient.startAndWait();
   }
 
   @Override
   protected void shutDown() throws Exception {
+    nmClient.stopAndWait();
     amrmClient.unregisterApplicationMaster(FinalApplicationStatus.SUCCEEDED, null, trackerUrl.toString());
     amrmClient.stop();
   }
 
   @Override
   public String getHost() {
-    return System.getenv().get(ApplicationConstants.NM_HOST_ENV);
+    return System.getenv().get(ApplicationConstants.Environment.NM_HOST.name());
   }
 
   @Override
   public int getNMPort() {
-    return Integer.parseInt(System.getenv().get(ApplicationConstants.NM_PORT_ENV));
-  }
-
-  @Override
-  protected Resource adjustCapability(Resource resource) {
-    int cores = YarnUtils.getVirtualCores(resource);
-    int updatedCores = Math.max(Math.min(cores, YarnUtils.getVirtualCores(maxCapability)),
-                                YarnUtils.getVirtualCores(minCapability));
-    // Try and set the virtual cores, which older versions of YARN don't support this.
-    if (cores != updatedCores && YarnUtils.setVirtualCores(resource, updatedCores)) {
-      LOG.info("Adjust virtual cores requirement from {} to {}.", cores, updatedCores);
-    }
-
-    int updatedMemory = Math.min(resource.getMemory(), maxCapability.getMemory());
-    int minMemory = minCapability.getMemory();
-    updatedMemory = (int) Math.ceil(((double) updatedMemory / minMemory)) * minMemory;
-
-    if (resource.getMemory() != updatedMemory) {
-      resource.setMemory(updatedMemory);
-      LOG.info("Adjust memory requirement from {} to {} MB.", resource.getMemory(), updatedMemory);
-    }
-
-    return resource;
+    return Integer.parseInt(System.getenv().get(ApplicationConstants.Environment.NM_PORT.name()));
   }
 
   @Override
   protected AMRMClient.ContainerRequest createContainerRequest(Priority priority, Resource capability,
                                                                @Nullable String[] hosts, @Nullable String[] racks,
                                                                boolean relaxLocality) {
-    // Ignore relaxLocality param since the corresponding support is not present in Hadoop 2.0.
-    return new AMRMClient.ContainerRequest(capability, hosts, racks, priority, 1);
+    return new AMRMClient.ContainerRequest(capability, hosts, racks, priority, relaxLocality);
   }
 
   @Override
@@ -146,23 +118,22 @@ public final class Hadoop20YarnAMClient extends AbstractYarnAMClient<AMRMClient.
 
   @Override
   protected void updateBlacklist(List<String> blacklistAdditions, List<String> blacklistRemovals) {
-    // An empty implementation since Blacklist is not supported in Hadoop-2.0.
-    LOG.warn("Blacklist is not supported in Hadoop 2.0. Ignoring Blacklist Additions: {}, Blacklist Removals: {}",
-             blacklistAdditions, blacklistRemovals);
+    LOG.info("Blacklist Additions: {} , Blacklist Removals: {}", blacklistAdditions, blacklistRemovals);
+    amrmClient.updateBlacklist(blacklistAdditions, blacklistRemovals);
   }
 
   @Override
   protected AllocateResult doAllocate(float progress) throws Exception {
-    AllocationResponse response = amrmClient.allocate(progress);
+    AllocateResponse allocateResponse = amrmClient.allocate(progress);
     List<RunnableProcessLauncher> launchers
-      = Lists.newArrayListWithCapacity(response.getAllocatedContainers().size());
+      = Lists.newArrayListWithCapacity(allocateResponse.getAllocatedContainers().size());
 
-    for (Container container : response.getAllocatedContainers()) {
-      launchers.add(new RunnableProcessLauncher(new Hadoop20YarnContainerInfo(container), nmClient));
+    for (Container container : allocateResponse.getAllocatedContainers()) {
+      launchers.add(new RunnableProcessLauncher(new Hadoop21YarnContainerInfo(container), nmClient));
     }
 
     List<YarnContainerStatus> completed = ImmutableList.copyOf(
-      Iterables.transform(response.getCompletedContainersStatuses(), STATUS_TRANSFORM));
+      Iterables.transform(allocateResponse.getCompletedContainersStatuses(), STATUS_TRANSFORM));
 
     return new AllocateResult(launchers, completed);
   }
@@ -171,5 +142,24 @@ public final class Hadoop20YarnAMClient extends AbstractYarnAMClient<AMRMClient.
   protected void releaseAssignedContainer(YarnContainerInfo containerInfo) {
     Container container = containerInfo.getContainer();
     amrmClient.releaseAssignedContainer(container.getId());
+  }
+
+  @Override
+  protected Resource adjustCapability(Resource resource) {
+    int cores = resource.getVirtualCores();
+    int updatedCores = Math.min(resource.getVirtualCores(), maxCapability.getVirtualCores());
+
+    if (cores != updatedCores) {
+      resource.setVirtualCores(updatedCores);
+      LOG.info("Adjust virtual cores requirement from {} to {}.", cores, updatedCores);
+    }
+
+    int updatedMemory = Math.min(resource.getMemory(), maxCapability.getMemory());
+    if (resource.getMemory() != updatedMemory) {
+      resource.setMemory(updatedMemory);
+      LOG.info("Adjust memory requirement from {} to {} MB.", resource.getMemory(), updatedMemory);
+    }
+
+    return resource;
   }
 }

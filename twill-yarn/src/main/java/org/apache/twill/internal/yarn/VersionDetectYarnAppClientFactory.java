@@ -31,7 +31,7 @@ public final class VersionDetectYarnAppClientFactory implements YarnAppClientFac
     try {
       Class<YarnAppClient> clz;
 
-      if (YarnUtils.isHadoop20()) {
+      if (YarnUtils.getHadoopVersion().equals(YarnUtils.HadoopVersions.HADOOP_20)) {
         // Uses hadoop-2.0 class.
         String clzName = getClass().getPackage().getName() + ".Hadoop20YarnAppClient";
         clz = (Class<YarnAppClient>) Class.forName(clzName);

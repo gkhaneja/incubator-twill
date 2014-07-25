@@ -362,7 +362,7 @@ public final class ApplicationMasterService extends AbstractTwillService {
       }
     };
 
-    int attemptsForCurrentRequest = 0;
+    long requestStartTime = 0;
     boolean isRequestRelaxed = false;
     long nextTimeoutCheck = System.currentTimeMillis() + Constants.PROVISION_TIMEOUT;
     while (isRunning()) {
@@ -391,15 +391,17 @@ public final class ApplicationMasterService extends AbstractTwillService {
         addContainerRequests(currentRequest.getKey().getResource(), currentRequest.getValue(), provisioning,
                              currentRequest.getKey().getType());
         currentRequest = null;
-        attemptsForCurrentRequest = 0;
+        requestStartTime = System.currentTimeMillis();
         isRequestRelaxed = false;
       }
 
-      // Relax constraints if request has not been provisioned by Resource Manager, post maximum attempts.
+      // Check for provision request timeout i.e. check if any provision request has been pending
+      // for more than the designated time. On timeout, relax the request constraints.
       if (!provisioning.isEmpty() && !isRequestRelaxed &&
-        ++attemptsForCurrentRequest > Constants.MAX_CONSTRAINED_PROVISION_ATTEMPTS) {
+        (System.currentTimeMillis() - requestStartTime) > Constants.CONSTRAINED_PROVISION_REQUEST_TIMEOUT) {
+        LOG.warn("Relaxing provisioning constraints for request {}", provisioning.peek().getRequestId());
+        // Clear the blacklist for the pending provision request(s).
         clearBlacklist();
-        LOG.warn("Relaxing provisioning constraint for request {}", provisioning.peek().getRequestId());
         isRequestRelaxed = true;
       }
 

@@ -22,12 +22,12 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hdfs.HdfsConfiguration;
 import org.apache.hadoop.hdfs.MiniDFSCluster;
 import org.apache.hadoop.yarn.api.records.NodeReport;
-import org.apache.hadoop.yarn.client.api.YarnClient;
 import org.apache.hadoop.yarn.conf.YarnConfiguration;
-import org.apache.hadoop.yarn.exceptions.YarnException;
 import org.apache.hadoop.yarn.server.MiniYARNCluster;
 import org.apache.twill.api.TwillRunner;
 import org.apache.twill.api.TwillRunnerService;
+import org.apache.twill.internal.yarn.VersionDetectYarnAppClientFactory;
+import org.apache.twill.internal.yarn.YarnAppClient;
 import org.apache.twill.internal.yarn.YarnUtils;
 import org.apache.twill.internal.zookeeper.InMemoryZKServer;
 import org.junit.rules.TemporaryFolder;
@@ -51,7 +51,7 @@ public final class YarnTestUtils {
   private static MiniYARNCluster cluster;
   private static TwillRunnerService runnerService;
   private static YarnConfiguration config;
-  private static YarnClient yarnClient;
+  private static YarnAppClient yarnAppClient;
 
   private static final AtomicBoolean once = new AtomicBoolean(false);
 
@@ -90,7 +90,7 @@ public final class YarnTestUtils {
 
     config = new YarnConfiguration(dfsCluster.getFileSystem().getConf());
 
-    if (YarnUtils.isHadoop20()) {
+    if (YarnUtils.getHadoopVersion().equals(YarnUtils.HadoopVersions.HADOOP_20)) {
       config.set("yarn.resourcemanager.scheduler.class",
               "org.apache.hadoop.yarn.server.resourcemanager.scheduler.fifo.FifoScheduler");
     } else {
@@ -98,13 +98,13 @@ public final class YarnTestUtils {
               "org.apache.hadoop.yarn.server.resourcemanager.scheduler.capacity.CapacityScheduler");
       config.set("yarn.scheduler.capacity.resource-calculator",
               "org.apache.hadoop.yarn.util.resource.DominantResourceCalculator");
+      config.setBoolean("yarn.scheduler.include-port-in-node-name", true);
     }
     config.set("yarn.minicluster.fixed.ports", "true");
     config.set("yarn.nodemanager.vmem-pmem-ratio", "20.1");
     config.set("yarn.nodemanager.vmem-check-enabled", "false");
     config.set("yarn.scheduler.minimum-allocation-mb", "128");
     config.set("yarn.nodemanager.delete.debug-delay-sec", "3600");
-    config.setBoolean(YarnConfiguration.RM_SCHEDULER_INCLUDE_PORT_IN_NODE_NAME, true);
 
     cluster = new MiniYARNCluster("test-cluster", 3, 1, 1);
     cluster.init(config);
@@ -113,9 +113,8 @@ public final class YarnTestUtils {
     runnerService = createTwillRunnerService();
     runnerService.startAndWait();
 
-    yarnClient = YarnClient.createYarnClient();
-    yarnClient.init(config);
-    yarnClient.start();
+    yarnAppClient = new VersionDetectYarnAppClientFactory().create(config);
+    yarnAppClient.start();
   }
 
   public static final boolean finish() {
@@ -124,7 +123,7 @@ public final class YarnTestUtils {
       cluster.stop();
       dfsCluster.shutdown();
       zkServer.stopAndWait();
-      yarnClient.stop();
+      yarnAppClient.stop();
 
       return true;
     }
@@ -150,8 +149,13 @@ public final class YarnTestUtils {
     return runner;
   }
 
-  public static final List<NodeReport> getNodeReports() throws IOException, YarnException {
-    return yarnClient.getNodeReports();
+  /**
+   * Returns {@link org.apache.hadoop.yarn.api.records.NodeReport} for the nodes in the MiniYarnCluster.
+   * @return a list of {@link org.apache.hadoop.yarn.api.records.NodeReport} for the nodes in the cluster.
+   * @throws Exception Propagates exceptions thrown by {@link org.apache.hadoop.yarn.client.api.YarnClient}.
+   */
+  public static final List<NodeReport> getNodeReports() throws Exception {
+    return yarnAppClient.getNodeReports();
   }
 
   public static final <T> boolean waitForSize(Iterable<T> iterable, int count, int limit) throws InterruptedException {

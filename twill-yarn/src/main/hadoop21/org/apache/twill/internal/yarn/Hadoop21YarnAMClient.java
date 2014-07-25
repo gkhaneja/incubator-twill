@@ -107,12 +107,6 @@ public final class Hadoop21YarnAMClient extends AbstractYarnAMClient<AMRMClient.
   }
 
   @Override
-  protected AMRMClient.ContainerRequest createContainerRequest(Priority priority, Resource capability,
-                                                               @Nullable String[] hosts, @Nullable String[] racks) {
-    return new AMRMClient.ContainerRequest(capability, hosts, racks, priority);
-  }
-
-  @Override
   protected void addContainerRequest(AMRMClient.ContainerRequest request) {
     amrmClient.addContainerRequest(request);
   }
@@ -124,8 +118,9 @@ public final class Hadoop21YarnAMClient extends AbstractYarnAMClient<AMRMClient.
 
   @Override
   protected void updateBlacklist(List<String> blacklistAdditions, List<String> blacklistRemovals) {
-    LOG.info("Blacklist Additions: {} , Blacklist Removals: {}", blacklistAdditions, blacklistRemovals);
-    amrmClient.updateBlacklist(blacklistAdditions, blacklistRemovals);
+    // An empty implementation since Blacklist is not supported in Hadoop-2.1 AMRMClient.
+    LOG.warn("Blacklist is not supported in Hadoop 2.1 AMRMClient. Ignoring Blacklist Additions: {}, " +
+               "Blacklist Removals: {}", blacklistAdditions, blacklistRemovals);
   }
 
   @Override

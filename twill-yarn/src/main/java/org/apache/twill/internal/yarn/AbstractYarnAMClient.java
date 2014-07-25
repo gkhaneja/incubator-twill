@@ -229,18 +229,6 @@ public abstract class AbstractYarnAMClient<T> extends AbstractIdleService implem
                                               boolean relaxLocality);
 
   /**
-   * Creates a container request based on the given requirement.
-   *
-   * @param priority The priority of the request.
-   * @param capability The resource capability.
-   * @param hosts Sets of hosts. Could be {@code null}.
-   * @param racks Sets of racks. Could be {@code null}.
-   * @return A container request.
-   */
-  protected abstract T createContainerRequest(Priority priority, Resource capability,
-                                              @Nullable String[] hosts, @Nullable String[] racks);
-
-  /**
    * Adds the given request to prepare for next allocate call.
    */
   protected abstract void addContainerRequest(T request);
