@@ -57,6 +57,9 @@ public class PlacementPolicyTestRun extends BaseYarnTest {
    */
   @BeforeClass
   public static void verifyClusterCapability() {
+    // Ignore verifications if it is running against older Hadoop versions which does not support blacklists.
+    Assume.assumeTrue(YarnUtils.getHadoopVersion().equals(YarnUtils.HadoopVersions.HADOOP22));
+
     // All runnables in this test class use same resource specification for the sake of convenience.
     resource = ResourceSpecification.Builder.with()
       .setVirtualCores(1)
@@ -84,10 +87,8 @@ public class PlacementPolicyTestRun extends BaseYarnTest {
       Assert.assertNotNull(capability);
       if (used != null) {
         Assert.assertTrue(2 * resource.getMemorySize() < capability.getMemory() - used.getMemory());
-        Assert.assertTrue(2 * resource.getVirtualCores() < capability.getVirtualCores() - used.getVirtualCores());
       } else {
         Assert.assertTrue(2 * resource.getMemorySize() < capability.getMemory());
-        Assert.assertTrue(2 * resource.getVirtualCores() < capability.getVirtualCores());
       }
     }
   }
@@ -97,6 +98,9 @@ public class PlacementPolicyTestRun extends BaseYarnTest {
    */
   @Test
   public void testPlacementPolicy() throws InterruptedException {
+    // Ignore test if it is running against older Hadoop versions which does not support blacklists.
+    Assume.assumeTrue(YarnUtils.getHadoopVersion().equals(YarnUtils.HadoopVersions.HADOOP22));
+
     ServiceDiscovered serviceDiscovered;
     ResourceReport resourceReport;
     Set<Integer> nmPorts = Sets.newHashSet();
@@ -116,18 +120,15 @@ public class PlacementPolicyTestRun extends BaseYarnTest {
       serviceDiscovered = controller.discoverService("PlacementPolicyTest");
       Assert.assertTrue(YarnTestUtils.waitForSize(serviceDiscovered, 4, 80));
 
-      // Test for DISTRIBUTED placement policies only if tests are running against Hadoop version 2.2 or later.
-      if (YarnUtils.getHadoopVersion().equals(YarnUtils.HadoopVersions.HADOOP22)) {
-        // DISTRIBUTED runnables should be provisioned on different nodes.
-        resourceReport = controller.getResourceReport();
-        distributedResource = resourceReport.getRunnableResources("distributedRunnable");
-        Assert.assertNotNull(distributedResource);
-        Assert.assertEquals(distributedResource.size(), 2);
-        Iterator<TwillRunResources> distributedResourceIterator = distributedResource.iterator();
-        nmPorts.add(distributedResourceIterator.next().getNMPort());
-        nmPorts.add(distributedResourceIterator.next().getNMPort());
-        Assert.assertEquals(nmPorts.size(), 2);
-      }
+      // DISTRIBUTED runnables should be provisioned on different nodes.
+      resourceReport = controller.getResourceReport();
+      distributedResource = resourceReport.getRunnableResources("distributedRunnable");
+      Assert.assertNotNull(distributedResource);
+      Assert.assertEquals(distributedResource.size(), 2);
+      Iterator<TwillRunResources> distributedResourceIterator = distributedResource.iterator();
+      nmPorts.add(distributedResourceIterator.next().getNMPort());
+      nmPorts.add(distributedResourceIterator.next().getNMPort());
+      Assert.assertEquals(nmPorts.size(), 2);
     } finally {
       controller.stopAndWait();
     }
