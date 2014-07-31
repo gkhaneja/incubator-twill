@@ -399,7 +399,7 @@ public final class ApplicationMasterService extends AbstractTwillService {
       // for more than the designated time. On timeout, relax the request constraints.
       if (!provisioning.isEmpty() && !isRequestRelaxed &&
         (System.currentTimeMillis() - requestStartTime) > Constants.CONSTRAINED_PROVISION_REQUEST_TIMEOUT) {
-        LOG.warn("Relaxing provisioning constraints for request {}", provisioning.peek().getRequestId());
+        LOG.info("Relaxing provisioning constraints for request {}", provisioning.peek().getRequestId());
         // Clear the blacklist for the pending provision request(s).
         clearBlacklist();
         isRequestRelaxed = true;
@@ -820,7 +820,7 @@ public final class ApplicationMasterService extends AbstractTwillService {
               }
             } else {
               // Increase the number of instances
-              runnableContainerRequests.add(createRunnableContainerRequest(runnableName));
+              runnableContainerRequests.add(createRunnableContainerRequest(runnableName, newCount - oldCount));
             }
           } finally {
             runningContainers.sendToRunnable(runnableName, message, completion);
@@ -835,6 +835,11 @@ public final class ApplicationMasterService extends AbstractTwillService {
   }
 
   private RunnableContainerRequest createRunnableContainerRequest(final String runnableName) {
+    return createRunnableContainerRequest(runnableName, 1);
+  }
+
+  private RunnableContainerRequest createRunnableContainerRequest(final String runnableName,
+                                                                  final int numberOfInstances) {
     // Find the current order of the given runnable in order to create a RunnableContainerRequest.
     TwillSpecification.Order order = Iterables.find(twillSpec.getOrders(), new Predicate<TwillSpecification.Order>() {
       @Override
@@ -848,7 +853,7 @@ public final class ApplicationMasterService extends AbstractTwillService {
     Map<AllocationSpecification, Collection<RuntimeSpecification>> requestsMap = Maps.newHashMap();
     if (placementPolicyManager.getPlacementPolicyType(runnableName).equals(
       TwillSpecification.PlacementPolicy.Type.DISTRIBUTED)) {
-      for (int instanceId = 0; instanceId < runtimeSpec.getResourceSpecification().getInstances(); instanceId++) {
+      for (int instanceId = 0; instanceId < numberOfInstances; instanceId++) {
         AllocationSpecification allocationSpecification =
           new AllocationSpecification(capability, AllocationSpecification.Type.ALLOCATE_ONE_INSTANCE_AT_A_TIME,
                                       runnableName, instanceId);

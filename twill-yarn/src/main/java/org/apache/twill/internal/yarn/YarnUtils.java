@@ -21,6 +21,7 @@ import com.google.common.base.Function;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
@@ -63,11 +64,15 @@ public class YarnUtils {
   public enum HadoopVersions {
     HADOOP_20,
     HADOOP_21,
-    HADOOP22
+    HADOOP_22
   }
 
   private static final Logger LOG = LoggerFactory.getLogger(YarnUtils.class);
   private static final AtomicReference<HadoopVersions> HADOOP_VERSION = new AtomicReference<HadoopVersions>();
+  /**
+   * Contains a list of known unsupported features.
+   */
+  private static final List<String> unsupportedFeatures = Lists.newArrayList();
 
   public static YarnLocalResource createLocalResource(LocalFile localFile) {
     Preconditions.checkArgument(localFile.getLastModified() >= 0, "Last modified time should be >= 0.");
@@ -224,7 +229,7 @@ public class YarnUtils {
       Class.forName("org.apache.hadoop.yarn.client.api.NMClient");
       try {
         Class.forName("org.apache.hadoop.yarn.client.cli.LogsCLI");
-        HADOOP_VERSION.set(HadoopVersions.HADOOP22);
+        HADOOP_VERSION.set(HadoopVersions.HADOOP_22);
       } catch (ClassNotFoundException e) {
         HADOOP_VERSION.set(HadoopVersions.HADOOP_21);
       }
@@ -232,6 +237,19 @@ public class YarnUtils {
       HADOOP_VERSION.set(HadoopVersions.HADOOP_20);
     }
     return HADOOP_VERSION.get();
+  }
+
+  /**
+   * Records an unsupported feature.
+   * @param unsupportedFeature A string identifying an unsupported feature.
+   * @return Returns {@code false} if the feature has already been recorded, {@code true} otherwise.
+   */
+  public static boolean recordUnsupportedFeature(String unsupportedFeature) {
+    if (unsupportedFeatures.contains(unsupportedFeature)) {
+      return false;
+    }
+    unsupportedFeatures.add(unsupportedFeature);
+    return true;
   }
 
   /**

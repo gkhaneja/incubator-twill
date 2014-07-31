@@ -58,7 +58,7 @@ public class PlacementPolicyTestRun extends BaseYarnTest {
   @BeforeClass
   public static void verifyClusterCapability() {
     // Ignore verifications if it is running against older Hadoop versions which does not support blacklists.
-    Assume.assumeTrue(YarnUtils.getHadoopVersion().equals(YarnUtils.HadoopVersions.HADOOP22));
+    Assume.assumeTrue(YarnUtils.getHadoopVersion().equals(YarnUtils.HadoopVersions.HADOOP_22));
 
     // All runnables in this test class use same resource specification for the sake of convenience.
     resource = ResourceSpecification.Builder.with()
@@ -99,7 +99,7 @@ public class PlacementPolicyTestRun extends BaseYarnTest {
   @Test
   public void testPlacementPolicy() throws InterruptedException {
     // Ignore test if it is running against older Hadoop versions which does not support blacklists.
-    Assume.assumeTrue(YarnUtils.getHadoopVersion().equals(YarnUtils.HadoopVersions.HADOOP22));
+    Assume.assumeTrue(YarnUtils.getHadoopVersion().equals(YarnUtils.HadoopVersions.HADOOP_22));
 
     ServiceDiscovered serviceDiscovered;
     ResourceReport resourceReport;
@@ -166,7 +166,7 @@ public class PlacementPolicyTestRun extends BaseYarnTest {
   @Test
   public void testDistributedPlacementPolicy() throws InterruptedException {
     // Ignore test if it is running against older Hadoop versions which does not support blacklists.
-    Assume.assumeTrue(YarnUtils.getHadoopVersion().equals(YarnUtils.HadoopVersions.HADOOP22));
+    Assume.assumeTrue(YarnUtils.getHadoopVersion().equals(YarnUtils.HadoopVersions.HADOOP_22));
 
     ServiceDiscovered serviceDiscovered;
     ResourceReport resourceReport;
@@ -256,6 +256,81 @@ public class PlacementPolicyTestRun extends BaseYarnTest {
           .add("Eve", new EchoServer(), resource).noLocalFiles()
         .withPlacementPolicy()
           .add(TwillSpecification.PlacementPolicy.Type.DISTRIBUTED, "Alice", "Bob")
+        .anyOrder()
+        .build();
+    }
+  }
+
+  /**
+   * Test to verify changing instances during application run works for DISTRIBUTED runnables.
+   */
+  @Test
+  public void testChangeInstance() throws InterruptedException {
+    // Ignore test if it is running against older Hadoop versions which does not support blacklists.
+    Assume.assumeTrue(YarnUtils.getHadoopVersion().equals(YarnUtils.HadoopVersions.HADOOP_22));
+
+    ServiceDiscovered serviceDiscovered;
+    ResourceReport resourceReport;
+    Set<Integer> nmPorts = Sets.newHashSet();
+    Collection<TwillRunResources> aliceResources;
+    Collection<TwillRunResources> bobResources;
+
+    TwillRunner runner = YarnTestUtils.getTwillRunner();
+    TwillController controller = runner.prepare(new ChangeInstanceApplication())
+      .addLogHandler(new PrinterLogHandler(new PrintWriter(System.out, true)))
+      .withApplicationArguments("DistributedTest")
+      .withArguments("Alice", "alice")
+      .withArguments("Bob", "bob")
+      .withArguments("Eve", "eve")
+      .start();
+
+    try {
+      // All runnables should get started.
+      serviceDiscovered = controller.discoverService("DistributedTest");
+      Assert.assertTrue(YarnTestUtils.waitForSize(serviceDiscovered, 4, 60));
+
+      // Increasing the instance count for runnable Alice by 2.
+      controller.changeInstances("Alice", 4);
+      serviceDiscovered = controller.discoverService("DistributedTest");
+      Assert.assertTrue(YarnTestUtils.waitForSize(serviceDiscovered, 6, 60));
+
+      // Decreasing instance count for runnable Alice by 3.
+      controller.changeInstances("Alice", 1);
+      serviceDiscovered = controller.discoverService("DistributedTest");
+      Assert.assertTrue(YarnTestUtils.waitForSize(serviceDiscovered, 3, 60));
+
+      // Increasing instance count for runnable Bob by 2.
+      controller.changeInstances("Bob", 3);
+      serviceDiscovered = controller.discoverService("DistributedTest");
+      Assert.assertTrue(YarnTestUtils.waitForSize(serviceDiscovered, 5, 60));
+
+      // Increasing instance count for runnable Eve by 2.
+      controller.changeInstances("Eve", 3);
+      serviceDiscovered = controller.discoverService("DistributedTest");
+      Assert.assertTrue(YarnTestUtils.waitForSize(serviceDiscovered, 7, 60));
+    } finally {
+      controller.stopAndWait();
+    }
+
+    // Sleep a bit before exiting.
+    TimeUnit.SECONDS.sleep(2);
+  }
+
+  /**
+   * An application that runs three runnables, with a DISTRIBUTED placement policy for two of them.
+   */
+  public static final class ChangeInstanceApplication implements TwillApplication {
+
+    @Override
+    public TwillSpecification configure() {
+      return TwillSpecification.Builder.with()
+        .setName("DistributedApplication")
+        .withRunnable()
+        .add("Alice", new EchoServer(), twoInstancesResource).noLocalFiles()
+        .add("Bob", new EchoServer(), resource).noLocalFiles()
+        .add("Eve", new EchoServer(), resource).noLocalFiles()
+        .withPlacementPolicy()
+        .add(TwillSpecification.PlacementPolicy.Type.DISTRIBUTED, "Alice", "Bob")
         .anyOrder()
         .build();
     }
