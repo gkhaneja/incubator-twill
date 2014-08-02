@@ -28,17 +28,15 @@ public class DefaultTwillRunResources implements TwillRunResources {
   private final int virtualCores;
   private final int memoryMB;
   private final String host;
-  private final int nmPort;
   private final Integer debugPort;
 
   public DefaultTwillRunResources(int instanceId, String containerId,
-                                  int cores, int memoryMB, String host, int nmPort, Integer debugPort) {
+                                  int cores, int memoryMB, String host, Integer debugPort) {
     this.instanceId = instanceId;
     this.containerId = containerId;
     this.virtualCores = cores;
     this.memoryMB = memoryMB;
     this.host = host;
-    this.nmPort = nmPort;
     this.debugPort = debugPort;
   }
 
@@ -81,15 +79,6 @@ public class DefaultTwillRunResources implements TwillRunResources {
   @Override
   public String getHost() {
     return host;
-  }
-
-  /**
-   * Returns the port used by NodeManager on which runnable is provisioned.
-   * @return the port of NodeManager the runnable is running on.
-   */
-  @Override
-  public int getNMPort() {
-    return nmPort;
   }
 
   @Override

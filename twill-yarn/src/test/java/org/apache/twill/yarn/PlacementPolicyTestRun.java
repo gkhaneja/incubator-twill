@@ -39,7 +39,6 @@ import org.junit.Test;
 
 import java.io.PrintWriter;
 import java.util.Collection;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
@@ -48,6 +47,9 @@ import java.util.concurrent.TimeUnit;
  * Tests for placement Policies.
  */
 public class PlacementPolicyTestRun extends BaseYarnTest {
+  private static final int RUNNABLE_MEMORY = 512;
+  private static final int RUNNABLE_CORES = 1;
+
   private static List<NodeReport> nodeReports;
   private static ResourceSpecification resource;
   private static ResourceSpecification twoInstancesResource;
@@ -62,12 +64,12 @@ public class PlacementPolicyTestRun extends BaseYarnTest {
 
     // All runnables in this test class use same resource specification for the sake of convenience.
     resource = ResourceSpecification.Builder.with()
-      .setVirtualCores(1)
-      .setMemory(512, ResourceSpecification.SizeUnit.MEGA)
+      .setVirtualCores(RUNNABLE_CORES)
+      .setMemory(RUNNABLE_MEMORY, ResourceSpecification.SizeUnit.MEGA)
       .build();
     twoInstancesResource = ResourceSpecification.Builder.with()
-      .setVirtualCores(1)
-      .setMemory(512, ResourceSpecification.SizeUnit.MEGA)
+      .setVirtualCores(RUNNABLE_CORES)
+      .setMemory(RUNNABLE_MEMORY, ResourceSpecification.SizeUnit.MEGA)
       .setInstances(2)
       .build();
 
@@ -97,7 +99,7 @@ public class PlacementPolicyTestRun extends BaseYarnTest {
    * Test to verify placement policy without dynamically changing number of instances.
    */
   @Test
-  public void testPlacementPolicy() throws InterruptedException {
+  public void testPlacementPolicy() throws Exception {
     // Ignore test if it is running against older Hadoop versions which does not support blacklists.
     Assume.assumeTrue(YarnUtils.getHadoopVersion().equals(YarnUtils.HadoopVersions.HADOOP_22));
 
@@ -106,6 +108,7 @@ public class PlacementPolicyTestRun extends BaseYarnTest {
     Set<Integer> nmPorts = Sets.newHashSet();
     Collection<TwillRunResources> distributedResource;
 
+    Assert.assertEquals(getProvisionedNodeManagerCount(), 0);
     TwillRunner runner = YarnTestUtils.getTwillRunner();
     TwillController controller = runner.prepare(new PlacementPolicyApplication())
       .addLogHandler(new PrinterLogHandler(new PrintWriter(System.out, true)))
@@ -121,14 +124,7 @@ public class PlacementPolicyTestRun extends BaseYarnTest {
       Assert.assertTrue(YarnTestUtils.waitForSize(serviceDiscovered, 4, 80));
 
       // DISTRIBUTED runnables should be provisioned on different nodes.
-      resourceReport = controller.getResourceReport();
-      distributedResource = resourceReport.getRunnableResources("distributedRunnable");
-      Assert.assertNotNull(distributedResource);
-      Assert.assertEquals(distributedResource.size(), 2);
-      Iterator<TwillRunResources> distributedResourceIterator = distributedResource.iterator();
-      nmPorts.add(distributedResourceIterator.next().getNMPort());
-      nmPorts.add(distributedResourceIterator.next().getNMPort());
-      Assert.assertEquals(nmPorts.size(), 2);
+      Assert.assertTrue(getProvisionedNodeManagerCount() >= 2);
     } finally {
       controller.stopAndWait();
     }
@@ -164,7 +160,7 @@ public class PlacementPolicyTestRun extends BaseYarnTest {
    * Also, verifies that DISTRIBUTED placement policies do not affect other runnables.
    */
   @Test
-  public void testDistributedPlacementPolicy() throws InterruptedException {
+  public void testDistributedPlacementPolicy() throws Exception {
     // Ignore test if it is running against older Hadoop versions which does not support blacklists.
     Assume.assumeTrue(YarnUtils.getHadoopVersion().equals(YarnUtils.HadoopVersions.HADOOP_22));
 
@@ -174,6 +170,7 @@ public class PlacementPolicyTestRun extends BaseYarnTest {
     Collection<TwillRunResources> aliceResources;
     Collection<TwillRunResources> bobResources;
 
+    Assert.assertEquals(getProvisionedNodeManagerCount(), 0);
     TwillRunner runner = YarnTestUtils.getTwillRunner();
     TwillController controller = runner.prepare(new DistributedApplication())
       .addLogHandler(new PrinterLogHandler(new PrintWriter(System.out, true)))
@@ -187,31 +184,13 @@ public class PlacementPolicyTestRun extends BaseYarnTest {
       // All runnables should get started with DISTRIBUTED ones being on different nodes.
       serviceDiscovered = controller.discoverService("DistributedTest");
       Assert.assertTrue(YarnTestUtils.waitForSize(serviceDiscovered, 3, 60));
-      resourceReport = controller.getResourceReport();
-      Assert.assertNotNull(resourceReport);
-      aliceResources = resourceReport.getRunnableResources("Alice");
-      Assert.assertNotNull(aliceResources);
-      Assert.assertEquals(aliceResources.size(), 1);
-      bobResources = resourceReport.getRunnableResources("Bob");
-      Assert.assertNotNull(bobResources);
-      Assert.assertEquals(bobResources.size(), 1);
-      nmPorts.add(aliceResources.iterator().next().getNMPort());
-      nmPorts.add(bobResources.iterator().next().getNMPort());
-      Assert.assertEquals(nmPorts.size(), 2);
+      Assert.assertTrue(getProvisionedNodeManagerCount() >= 2);
 
       // Spawning a new instance for DISTRIBUTED runnable Alice, which should get a different node.
       controller.changeInstances("Alice", 2);
       serviceDiscovered = controller.discoverService("DistributedTest");
       Assert.assertTrue(YarnTestUtils.waitForSize(serviceDiscovered, 4, 60));
-      resourceReport = controller.getResourceReport();
-      Assert.assertNotNull(resourceReport);
-      aliceResources = resourceReport.getRunnableResources("Alice");
-      Assert.assertNotNull(aliceResources);
-      Assert.assertEquals(aliceResources.size(), 2);
-      Iterator<TwillRunResources> aliceResourceIterator = aliceResources.iterator();
-      nmPorts.add(aliceResourceIterator.next().getNMPort());
-      nmPorts.add(aliceResourceIterator.next().getNMPort());
-      Assert.assertEquals(nmPorts.size(), 3);
+      Assert.assertTrue(getProvisionedNodeManagerCount() >= 3);
 
       // Spawning a new instance for DEFAULT runnable Eve,
       // which should not be affected by placement policies of previous runnables.
@@ -224,15 +203,7 @@ public class PlacementPolicyTestRun extends BaseYarnTest {
       controller.changeInstances("Bob", 2);
       serviceDiscovered = controller.discoverService("DistributedTest");
       Assert.assertTrue(YarnTestUtils.waitForSize(serviceDiscovered, 6, 60));
-      resourceReport = controller.getResourceReport();
-      Assert.assertNotNull(resourceReport);
-      bobResources = resourceReport.getRunnableResources("Bob");
-      Assert.assertNotNull(bobResources);
-      Assert.assertEquals(bobResources.size(), 2);
-      Iterator<TwillRunResources> bobResourceIterator = bobResources.iterator();
-      nmPorts.add(bobResourceIterator.next().getNMPort());
-      nmPorts.add(bobResourceIterator.next().getNMPort());
-      Assert.assertEquals(nmPorts.size(), 3);
+      Assert.assertTrue(getProvisionedNodeManagerCount() >= 3);
     } finally {
       controller.stopAndWait();
     }
@@ -400,5 +371,21 @@ public class PlacementPolicyTestRun extends BaseYarnTest {
         .anyOrder()
         .build();
     }
+  }
+
+  /**
+   * Helper function to verify DISTRIBUTED placement policies.
+   * Returns the number of NodeManagers on which runnables got provisioned.
+   * @return number of NodeManagers on which runnables got provisioned.
+   */
+  private static int getProvisionedNodeManagerCount() throws Exception {
+    int provisionedNodeManagerCount = 0;
+    for (NodeReport nodeReport : YarnTestUtils.getNodeReports()) {
+      Resource used = nodeReport.getUsed();
+      if (used != null && used.getMemory() > 0) {
+          provisionedNodeManagerCount++;
+      }
+    }
+    return provisionedNodeManagerCount;
   }
 }

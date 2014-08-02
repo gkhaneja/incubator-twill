@@ -60,6 +60,10 @@ public abstract class AbstractYarnAMClient<T> extends AbstractIdleService implem
   private final List<String> blacklistRemovals;
   //Keep track of blacklisted resources
   private final List<String> blacklistedResources;
+  /**
+   * Contains a list of known unsupported features.
+   */
+  protected final List<String> unsupportedFeatures = Lists.newArrayList();
 
   protected final ContainerId containerId;
   protected InetSocketAddress trackerAddr;
@@ -204,6 +208,19 @@ public abstract class AbstractYarnAMClient<T> extends AbstractIdleService implem
     for (T request : containerRequests.removeAll(id)) {
       removes.add(request);
     }
+  }
+
+  /**
+   * Records an unsupported feature.
+   * @param unsupportedFeature A string identifying an unsupported feature.
+   * @return Returns {@code false} if the feature has already been recorded, {@code true} otherwise.
+   */
+  protected boolean recordUnsupportedFeature(String unsupportedFeature) {
+    if (unsupportedFeatures.contains(unsupportedFeature)) {
+      return false;
+    }
+    unsupportedFeatures.add(unsupportedFeature);
+    return true;
   }
 
   /**

@@ -69,10 +69,6 @@ public class YarnUtils {
 
   private static final Logger LOG = LoggerFactory.getLogger(YarnUtils.class);
   private static final AtomicReference<HadoopVersions> HADOOP_VERSION = new AtomicReference<HadoopVersions>();
-  /**
-   * Contains a list of known unsupported features.
-   */
-  private static final List<String> unsupportedFeatures = Lists.newArrayList();
 
   public static YarnLocalResource createLocalResource(LocalFile localFile) {
     Preconditions.checkArgument(localFile.getLastModified() >= 0, "Last modified time should be >= 0.");
@@ -237,19 +233,6 @@ public class YarnUtils {
       HADOOP_VERSION.set(HadoopVersions.HADOOP_20);
     }
     return HADOOP_VERSION.get();
-  }
-
-  /**
-   * Records an unsupported feature.
-   * @param unsupportedFeature A string identifying an unsupported feature.
-   * @return Returns {@code false} if the feature has already been recorded, {@code true} otherwise.
-   */
-  public static boolean recordUnsupportedFeature(String unsupportedFeature) {
-    if (unsupportedFeatures.contains(unsupportedFeature)) {
-      return false;
-    }
-    unsupportedFeatures.add(unsupportedFeature);
-    return true;
   }
 
   /**

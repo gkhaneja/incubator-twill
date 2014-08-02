@@ -119,7 +119,7 @@ public class Hadoop21YarnAMClient extends AbstractYarnAMClient<AMRMClient.Contai
   @Override
   protected void updateBlacklist(List<String> blacklistAdditions, List<String> blacklistRemovals) {
     // An empty implementation since Blacklist is not supported in Hadoop-2.1 AMRMClient.
-    if (YarnUtils.recordUnsupportedFeature("blacklist")) {
+    if (recordUnsupportedFeature("blacklist")) {
       LOG.warn("Blacklist is not supported in Hadoop 2.1 AMRMClient");
     }
   }

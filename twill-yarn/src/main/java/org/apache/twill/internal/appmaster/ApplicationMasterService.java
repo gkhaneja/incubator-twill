@@ -63,6 +63,7 @@ import org.apache.twill.filesystem.Location;
 import org.apache.twill.internal.AbstractTwillService;
 import org.apache.twill.internal.Configs;
 import org.apache.twill.internal.Constants;
+import org.apache.twill.internal.ContainerInfo;
 import org.apache.twill.internal.DefaultTwillRunResources;
 import org.apache.twill.internal.EnvKeys;
 import org.apache.twill.internal.JvmOptions;
@@ -160,7 +161,7 @@ public final class ApplicationMasterService extends AbstractTwillService {
       }
     });
     expectedContainers = initExpectedContainers(twillSpec);
-    runningContainers = initRunningContainers(amClient.getContainerId(), amClient.getHost(), amClient.getNMPort());
+    runningContainers = initRunningContainers(amClient.getContainerId(), amClient.getHost());
     trackerService = new TrackerService(new Supplier<ResourceReport>() {
       @Override
       public ResourceReport get() {
@@ -220,13 +221,13 @@ public final class ApplicationMasterService extends AbstractTwillService {
   }
 
   private RunningContainers initRunningContainers(ContainerId appMasterContainerId,
-                                                  String appMasterHost, int nmPort) throws Exception {
+                                                  String appMasterHost) throws Exception {
     TwillRunResources appMasterResources = new DefaultTwillRunResources(
       0,
       appMasterContainerId.toString(),
       Integer.parseInt(System.getenv(EnvKeys.YARN_CONTAINER_VIRTUAL_CORES)),
       Integer.parseInt(System.getenv(EnvKeys.YARN_CONTAINER_MEMORY_MB)),
-      appMasterHost, nmPort, null);
+      appMasterHost, null);
     String appId = appMasterContainerId.getApplicationAttemptId().getApplicationId().toString();
     return new RunningContainers(appId, appMasterResources);
   }
@@ -430,14 +431,14 @@ public final class ApplicationMasterService extends AbstractTwillService {
 
         //Update blacklist with hosts which are running DISTRIBUTED runnables
         for (String runnable : placementPolicyManager.getFellowRunnables(request.getKey().getRunnableName())) {
-          Collection<TwillRunResources> twillRunResources =
-            runningContainers.getResourceReport().getRunnableResources(runnable);
-          for (TwillRunResources twillRunResource : twillRunResources) {
+          Collection<ContainerInfo> containerStats =
+            runningContainers.getContainerInfo(runnable);
+          for (ContainerInfo containerInfo : containerStats) {
             // Yarn Resource Manager may include port in the node name depending on the setting
             // YarnConfiguration.RM_SCHEDULER_INCLUDE_PORT_IN_NODE_NAME. It is safe to add both
             // the names (with and without port) to the blacklist.
-            addToBlacklist(twillRunResource.getHost());
-            addToBlacklist(twillRunResource.getHost() + ":" + twillRunResource.getNMPort());
+            addToBlacklist(containerInfo.getHost().getHostName());
+            addToBlacklist(containerInfo.getHost().getHostName() + ":" + containerInfo.getPort());
           }
         }
       }
