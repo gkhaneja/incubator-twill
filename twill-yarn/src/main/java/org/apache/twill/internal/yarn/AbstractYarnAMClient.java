@@ -22,6 +22,7 @@ import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Multimap;
+import com.google.common.collect.Sets;
 import com.google.common.util.concurrent.AbstractIdleService;
 import org.apache.hadoop.yarn.api.records.ContainerId;
 import org.apache.hadoop.yarn.api.records.Priority;
@@ -35,6 +36,7 @@ import org.slf4j.LoggerFactory;
 import java.net.InetSocketAddress;
 import java.net.URL;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 import javax.annotation.Nullable;
 
@@ -63,7 +65,7 @@ public abstract class AbstractYarnAMClient<T> extends AbstractIdleService implem
   /**
    * Contains a list of known unsupported features.
    */
-  protected final List<String> unsupportedFeatures = Lists.newArrayList();
+  protected final Set<String> unsupportedFeatures = Sets.newHashSet();
 
   protected final ContainerId containerId;
   protected InetSocketAddress trackerAddr;
